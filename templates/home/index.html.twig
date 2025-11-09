@@ -1,0 +1,9 @@
+{% extends 'base.html.twig' %}
+{% block body %}
+<h1>Bienvenue sur GSM 👋</h1>
+{% if app.user %}
+<p>Connecté en tant que <strong>{{ app.user.email }}</strong></p>
+{% else %}
+<p><a href="{{ path('app_login') }}">Se connecter</a></p>
+{% endif %}
+{% endblock %}

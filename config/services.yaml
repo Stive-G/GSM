@@ -1,0 +1,37 @@
+# config/services.yaml
+parameters:
+  # Paramètres globaux si tu veux (facultatif)
+  # mongodb_db: '%env(MONGODB_DB)%'
+
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  # 1) Enregistre toutes tes classes App\ comme services
+  App\:
+    resource: '../src/'
+
+  # 2) Client MongoDB (vient du package composer mongodb/mongodb)
+  'MongoDB\Client':
+    class: 'MongoDB\Client'
+    arguments:
+      - '%env(MONGODB_URI)%'
+
+  # 3) (Optionnel) La database par défaut comme service, pour l’injecter directement
+  MongoDB\Database:
+    factory: ['@MongoDB\Client', 'selectDatabase']
+    arguments:
+      - '%env(MONGODB_DB)%'
+
+  # 4) (Optionnel) Une collection (ex: logs) comme service
+  MongoDB\Collection:
+    factory: ['@MongoDB\Database', 'selectCollection']
+    arguments:
+      - 'logs'
+
+  # 5) Ton LogService qui dépend du client (ou de la DB)
+  App\Service\LogService:
+    arguments:
+      - '@MongoDB\Client'      # ou remplace par '@MongoDB\Database' si tu préfères injecter la DB
+      - '%env(MONGODB_DB)%'

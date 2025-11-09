@@ -1,0 +1,254 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content %}
+	<style>
+		/* ——— KPI ——— */
+		.kpi .card-body {
+			white-space: nowrap
+		}
+		.kpi .label {
+			font-size: 0.9rem;
+			opacity: .8
+		}
+		.kpi .value {
+			font-size: 2rem;
+			line-height: 1;
+			font-weight: 700
+		}
+
+		/* ——— Alert card ——— */
+		.card-alert {
+			background: #2a0e12;
+			border: 1px solid #842029;
+		}
+		.card-alert .label {
+			color: #f5c2c7;
+			font-weight: 600
+		}
+		.card-alert .value {
+			color: #ff6b6b;
+			font-weight: 800
+		}
+
+		/* ——— Low stock section ——— */
+		.low-stock-header .chip {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35rem;
+			border: 1px solid rgba(255, 255, 255, 0.15);
+			border-radius: 999px;
+			padding: 0.25rem 0.6rem;
+			font-size: 0.85rem;
+			opacity: .9
+		}
+		.low-card {
+			background: rgba(255, 255, 255, 0.03);
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			border-radius: 14px;
+			overflow: hidden;
+			transition: transform 0.15s ease, box-shadow 0.2s ease
+		}
+		.low-card:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25)
+		}
+		.low-meta {
+			font-size: 0.85rem;
+			opacity: .8
+		}
+		.low-qty {
+			font-feature-settings: "tnum" 1, "lnum" 1
+		}
+		.progress {
+			height: 0.45rem;
+			background: rgba(255, 255, 255, 0.08)
+		}
+		.progress-bar.ok {
+			background: #198754
+		}
+		.progress-bar.warn {
+			background: #ffc107
+		}
+		.progress-bar.crit {
+			background: #dc3545
+		}
+
+		/* ——— Empty state ——— */
+		.empty {
+			border: 1px dashed rgba(255, 255, 255, 0.15);
+			border-radius: 16px;
+			padding: 2rem;
+			background: rgba(255, 255, 255, 0.02);
+			max-width: 560px; /* ✅ centrage plus propre */
+			margin: 2rem auto; /* ✅ centré horizontalement */
+		}
+		.empty .icon {
+			width: 48px;
+			height: 48px;
+			border-radius: 12px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			background: rgba(25, 135, 84, 0.12);
+			color: #49d39d;
+			margin-bottom: 0.75rem
+		}
+
+		/* Utilities */
+		.muted {
+			opacity: .7
+		}
+	</style>
+
+	{# ===================== KPI ===================== #}
+	<div class="kpi container-fluid px-0 mb-4">
+		<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-5 g-3">
+			<div class="col">
+				<div class="card h-100 shadow-sm">
+					<div class="card-body text-center">
+						<div class="label">Articles</div>
+						<div class="value">{{ countArticles }}</div>
+					</div>
+				</div>
+			</div>
+			<div class="col">
+				<div class="card h-100 shadow-sm">
+					<div class="card-body text-center">
+						<div class="label">Magasins</div>
+						<div class="value">{{ countMagasins }}</div>
+					</div>
+				</div>
+			</div>
+			<div class="col">
+				<div class="card h-100 shadow-sm">
+					<div class="card-body text-center">
+						<div class="label">Mouvements</div>
+						<div class="value">{{ countMvts }}</div>
+					</div>
+				</div>
+			</div>
+			<div class="col">
+				<div class="card h-100 shadow-sm">
+					<div class="card-body text-center">
+						<div class="label">Lignes de stock</div>
+						<div class="value">{{ countStocks }}</div>
+					</div>
+				</div>
+			</div>
+			<div class="col">
+				<div class="card h-100 shadow-sm card-alert">
+					<div class="card-body text-center">
+						<div class="label">⚠️ Stock bas (≤
+							{{ threshold }})</div>
+						<div class="value">{{ countLowStock }}</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	{# ===================== LOW STOCK SECTION ===================== #}
+	<section class="mt-4">
+		<div class="d-flex align-items-center justify-content-between low-stock-header mb-3">
+			<div class="d-flex align-items-center gap-2">
+				<h5 class="mb-0">Articles en stock bas</h5>
+				<span class="chip">
+					<i class="fa fa-gauge-high"></i>
+					seuil
+					{{ threshold }}
+				</span>
+				<span class="chip">
+					<i class="fa fa-bell"></i>
+					{{ countLowStock }}
+					alerte{{ countLowStock > 1 ? 's' : '' }}
+				</span>
+			</div>
+			<div class="d-flex gap-2">
+				<a href="{{ path('admin') }}" class="btn btn-sm btn-outline-light">
+					<i class="fa fa-rotate-right me-1"></i>Rafraîchir
+				</a>
+				<button class="btn btn-sm btn-outline-secondary" disabled>
+					<i class="fa fa-download me-1"></i>Exporter
+				</button>
+			</div>
+		</div>
+
+		{% if countLowStock > 0 %}
+			<div class="row g-3 row-cols-1 row-cols-md-2 row-cols-xl-3 mb-3">
+				{% for s in lowStocks %}
+					{% set q = s.quantity + 0 %}
+					{% set p = (q / (threshold ?: 1) * 100) | round(0, 'floor') %}
+					{% set cls = q <= 0 ? 'crit' : (q < threshold/2 ? 'crit' : (q < threshold ? 'warn' : 'ok')) %}
+					<div class="col">
+						<div class="low-card h-100 p-3">
+							<div class="d-flex justify-content-between align-items-start mb-2">
+								<div>
+									<div class="fw-semibold">{{ s.article.label }}</div>
+									<div class="low-meta">
+										{{ s.conditionnement.label ?? '—' }}
+										·
+										{{ s.magasin.name }}
+									</div>
+								</div>
+								<div class="text-end">
+									<div class="low-qty fw-bold {{ cls == 'crit' ? 'text-danger' : (cls == 'warn' ? 'text-warning' : 'text-success') }}">
+										{{ q }}
+									</div>
+									<div class="muted" style="font-size:.8rem">Qté restante</div>
+								</div>
+							</div>
+
+							{# ✅ Correction du clamp sur la jauge #}
+							<div class="progress mb-2" role="progressbar" aria-label="Niveau stock" aria-valuenow="{{ max(0, min(p, 100)) }}" aria-valuemin="0" aria-valuemax="100">
+								<div class="progress-bar {{ cls }}" style="width: {{ max(0, min(p, 100)) }}%"></div>
+							</div>
+
+							<div class="d-flex justify-content-between muted" style="font-size:.8rem">
+								<span>Seuil&nbsp;:
+									{{ threshold }}</span>
+								<span>{{ p }}%</span>
+							</div>
+						</div>
+					</div>
+				{% endfor %}
+			</div>
+
+			<div class="table-responsive">
+				<table class="table table-sm table-striped align-middle">
+					<thead class="table-light">
+						<tr>
+							<th>Article</th>
+							<th>Cond.</th>
+							<th>Magasin</th>
+							<th class="text-end">Qté</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for s in lowStocks %}
+							<tr>
+								<td class="fw-semibold">{{ s.article.label }}</td>
+								<td>{{ s.conditionnement.label ?? '-' }}</td>
+								<td>{{ s.magasin.name }}</td>
+								<td class="text-end text-danger fw-bold">{{ s.quantity }}</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+
+		{% else %}
+			{# ✅ Empty state centré #}
+			<div class="row mt-4">
+				<div class="col-12 col-md-8 col-lg-6 mx-auto">
+					<div class="empty text-center">
+						<div class="icon">
+							<i class="fa fa-circle-check"></i>
+						</div>
+						<h5 class="mb-1">Tout est au vert</h5>
+						<p class="mb-0 muted">Aucun article n’est en dessous du seuil critique pour le moment.</p>
+					</div>
+				</div>
+			</div>
+		{% endif %}
+	</section>
+{% endblock %}
