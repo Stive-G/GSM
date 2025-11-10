@@ -11,7 +11,7 @@
         "doctrine/doctrine-bundle": "^2.18",
         "doctrine/doctrine-migrations-bundle": "^3.5",
         "doctrine/orm": "^3.5",
-        "easycorp/easyadmin-bundle": "^4.26",
+        "easycorp/easyadmin-bundle": "^4.27",
         "mongodb/mongodb": "^2.1",
         "symfony/console": "7.3.*",
         "symfony/dotenv": "7.3.*",
