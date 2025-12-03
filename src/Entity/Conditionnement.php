@@ -8,6 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
     name: 'uniq_article_label',
     columns: ['article_id', 'label']
 )]
+// LEGACY SQL entity for catalogue (catalogue Mongo est désormais la source de vérité).
 class Conditionnement
 {
     #[ORM\Id]

@@ -1,0 +1,38 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block page_title 'Stocks pour ' ~ product.name %}
+
+{% block content %}
+    <p><a href="{{ path('admin_catalog_products_index') }}">← Retour aux produits</a></p>
+    <h2>Stocks existants</h2>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Magasin</th>
+            <th>Variante</th>
+            <th>Quantité</th>
+            <th>Mis à jour</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for stock in stocks %}
+            <tr>
+                <td>{{ stock.magasinId }}</td>
+                <td>{{ stock.variantId ?: 'Produit principal' }}</td>
+                <td>{{ stock.quantity }}</td>
+                <td>{{ stock.updatedAt ? stock.updatedAt|date('Y-m-d H:i') : '-' }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="4">Aucune ligne de stock</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Ajouter / mettre à jour</h2>
+    {{ form_start(form) }}
+    {{ form_row(form.variantId) }}
+    {{ form_row(form.magasinId) }}
+    {{ form_row(form.quantity) }}
+    <button class="btn btn-primary">Enregistrer</button>
+    {{ form_end(form) }}
+{% endblock %}

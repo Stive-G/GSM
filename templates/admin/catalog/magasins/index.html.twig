@@ -1,0 +1,35 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block page_title 'Magasins (MongoDB)' %}
+
+{% block content %}
+    <a class="btn btn-primary mb-3" href="{{ path('admin_catalog_magasins_create') }}">Nouveau magasin</a>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Nom</th>
+            <th>Code</th>
+            <th>Actif</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for magasin in magasins %}
+            <tr>
+                <td>{{ magasin.name }}</td>
+                <td>{{ magasin.code }}</td>
+                <td>{{ magasin.isActive ? 'Oui' : 'Non' }}</td>
+                <td class="text-end">
+                    <a class="btn btn-sm btn-secondary" href="{{ path('admin_catalog_magasins_edit', {id: magasin.id}) }}">Éditer</a>
+                    <form action="{{ path('admin_catalog_magasins_delete', {id: magasin.id}) }}" method="post" style="display:inline-block" onsubmit="return confirm('Supprimer ?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete_magasin_' ~ magasin.id) }}">
+                        <button class="btn btn-sm btn-danger">Supprimer</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="4">Aucun magasin</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

@@ -3,12 +3,10 @@
 namespace App\Controller\Admin;
 
 use App\Entity\User;
-use App\Entity\Article;
-use App\Entity\Magasin;
-use App\Entity\MouvementStock;
-use App\Entity\Stock;
-use Doctrine\Persistence\ManagerRegistry;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\Catalog\CatalogMagasinRepository;
+use App\Repository\Catalog\CatalogProductRepository;
+use App\Repository\Catalog\CatalogStockRepository;
+use App\Repository\DocumentRepository;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
@@ -18,42 +16,28 @@ use Symfony\Component\HttpFoundation\Response;
 #[AdminDashboard(routePath: '/admin', routeName: 'admin')]
 class DashboardController extends AbstractDashboardController
 {
-    public function __construct(private readonly ManagerRegistry $doctrine) {}
+    public function __construct(
+        private readonly CatalogProductRepository $productRepository,
+        private readonly CatalogMagasinRepository $magasinRepository,
+        private readonly CatalogStockRepository $stockRepository,
+        private readonly DocumentRepository $documentRepository,
+    ) {
+    }
 
     public function index(): Response
     {
-        /** @var EntityManagerInterface $em */
-        $em = $this->doctrine->getManager();
-
-        /** @var \App\Repository\ArticleRepository $articleRepo */
-        $articleRepo = $em->getRepository(Article::class);
-        $countArticles = $articleRepo->count([]);
-
-        /** @var \App\Repository\MagasinRepository $magasinRepo */
-        $magasinRepo = $em->getRepository(Magasin::class);
-        $countMagasins = $magasinRepo->count([]);
-
-        /** @var \App\Repository\MouvementStockRepository $mvtRepo */
-        $mvtRepo = $em->getRepository(MouvementStock::class);
-        $countMvts = $mvtRepo->count([]);
-
-        /** @var \App\Repository\StockRepository $stockRepo */
-        $stockRepo = $em->getRepository(Stock::class);
-        $countStocks = $stockRepo->count([]);
-
-        // 🔔 Alerte stock bas (seuil configuré à 5)
-        $threshold = 5;
-        $countLowStock = $stockRepo->countLowStock($threshold);
-        $lowStocks = $stockRepo->findLowStock($threshold);
+        $countArticles = count($this->productRepository->findAll());
+        $countMagasins = count($this->magasinRepository->findAll());
+        $countStocks = count($this->stockRepository->findAll());
 
         return $this->render('admin/dashboard.html.twig', [
             'countArticles' => $countArticles,
             'countMagasins' => $countMagasins,
-            'countMvts'     => $countMvts,
+            'countMvts'     => $this->documentRepository->count([]),
             'countStocks'   => $countStocks,
-            'countLowStock' => $countLowStock,
-            'lowStocks'     => $lowStocks,
-            'threshold'     => $threshold,
+            'countLowStock' => 0,
+            'lowStocks'     => [],
+            'threshold'     => 0,
         ]);
     }
 
@@ -61,51 +45,35 @@ class DashboardController extends AbstractDashboardController
     {
         return Dashboard::new()
             ->setTitle('GSM')
-            ->renderContentMaximized(); // plein écran pour le tableau de bord
+            ->renderContentMaximized();
     }
 
     public function configureMenuItems(): iterable
     {
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
 
-        // 👑 ADMIN
         if ($this->isGranted('ROLE_ADMIN')) {
             yield MenuItem::linkToCrud('Utilisateurs', 'fa fa-users', User::class)
                 ->setPermission('ROLE_ADMIN');
-            yield MenuItem::linkToRoute(
-                'Journaux (Mongo)',
-                'fa fa-list-check',
-                'admin_logs'
-            )->setPermission('ROLE_ADMIN');
+            yield MenuItem::linkToRoute('Journaux (SQL)', 'fa fa-list-check', 'admin_logs')
+                ->setPermission('ROLE_ADMIN');
         }
 
-        // 📦 MAGASINIER / DIRECTION / ADMIN
         if ($this->isGranted('ROLE_MAGASINIER') || $this->isGranted('ROLE_DIRECTION') || $this->isGranted('ROLE_ADMIN')) {
-            yield MenuItem::linkToRoute(
-                'Transfert de stock',
-                'fa fa-right-left',
-                'admin_transfer'
-            );
-            yield MenuItem::linkToCrud(
-                'Historique transferts',
-                'fa fa-clock-rotate-left',
-                \App\Entity\Transfer::class
-            );
+            yield MenuItem::linkToRoute('Transfert de stock', 'fa fa-right-left', 'admin_transfer');
+            yield MenuItem::linkToCrud('Historique transferts', 'fa fa-clock-rotate-left', \App\Entity\Transfer::class);
         }
 
-        // 🏢 DIRECTION / ADMIN
         if ($this->isGranted('ROLE_DIRECTION') || $this->isGranted('ROLE_ADMIN')) {
-            yield MenuItem::linkToCrud('Catégories', 'fa fa-tags', \App\Entity\Categorie::class);
-            yield MenuItem::linkToCrud('Articles', 'fa fa-box', Article::class);
-            yield MenuItem::linkToCrud('Magasins', 'fa fa-warehouse', Magasin::class);
-            yield MenuItem::linkToCrud('Conditionnements', 'fa fa-boxes-stacked', \App\Entity\Conditionnement::class);
+            yield MenuItem::linkToRoute('Catégories', 'fa fa-tags', 'admin_catalog_categories_index');
+            yield MenuItem::linkToRoute('Produits', 'fa fa-box', 'admin_catalog_products_index');
+            yield MenuItem::linkToRoute('Magasins', 'fa fa-warehouse', 'admin_catalog_magasins_index');
             yield MenuItem::linkToCrud('Clients', 'fa fa-user', \App\Entity\Client::class);
             yield MenuItem::linkToCrud('Documents', 'fa fa-file-invoice', \App\Entity\Document::class);
         }
 
-        // 🔄 MOUVEMENTS
         if ($this->isGranted('ROLE_MAGASINIER') || $this->isGranted('ROLE_DIRECTION') || $this->isGranted('ROLE_ADMIN')) {
-            yield MenuItem::linkToCrud('Mouvements', 'fa fa-right-left', MouvementStock::class);
+            yield MenuItem::linkToCrud('Mouvements', 'fa fa-right-left', \App\Entity\MouvementStock::class);
         }
     }
 }
