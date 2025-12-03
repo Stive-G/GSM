@@ -17,7 +17,8 @@ class CatalogProductRepository extends AbstractMongoCatalogRepository
         $this->collection->createIndex(['categories' => 1]);
         $this->collection->createIndex(['isActive' => 1]);
         $this->collection->createIndex(['brand' => 1]);
-        $this->collection->createIndex(['attributes' => 'text', 'name' => 'text', 'description' => 'text']);
+        $this->collection->createIndex(['variants.price.ttc' => 1]);
+        $this->collection->createIndex(['name' => 'text', 'description' => 'text'], ['weights' => ['name' => 5, 'description' => 2]]);
     }
 
     protected function getCollection(): Collection
@@ -72,7 +73,7 @@ class CatalogProductRepository extends AbstractMongoCatalogRepository
         }
 
         if (!empty($filters['text'])) {
-            $query['$text'] = ['\$search' => $filters['text']];
+            $query['$text'] = ['$search' => $filters['text']];
         }
 
         $sort = $this->resolveSort($filters['sort'] ?? null);

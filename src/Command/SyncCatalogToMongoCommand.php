@@ -91,7 +91,7 @@ class SyncCatalogToMongoCommand extends Command
     private function buildCategoryDocument(Categorie $category): array
     {
         $slug = strtolower($this->slugger->slug($category->getName()));
-        $id = sprintf('cat-%s', $slug ?: $category->getId());
+        $id = sprintf('cat-%s', $category->getId() ?? $slug);
 
         return [
             '_id' => $id,
@@ -115,7 +115,8 @@ class SyncCatalogToMongoCommand extends Command
     {
         $slug = strtolower($this->slugger->slug($article->getLabel()));
         $mainCategory = $article->getCategorie();
-        $categoryId = $mainCategory ? sprintf('cat-%s', strtolower($this->slugger->slug($mainCategory->getName()))) : null;
+        $categoryId = $mainCategory ? sprintf('cat-%s', $mainCategory->getId() ?? strtolower($this->slugger->slug($mainCategory->getName()))) : null;
+        $now = new UTCDateTime((int) (microtime(true) * 1000));
 
         return [
             '_id' => sprintf('prd-%s', $article->getReference()),
@@ -132,8 +133,8 @@ class SyncCatalogToMongoCommand extends Command
             'variants' => $this->buildVariants($article),
             'tags' => [],
             'isActive' => $article->isActive(),
-            'createdAt' => new UTCDateTime(),
-            'updatedAt' => new UTCDateTime(),
+            'createdAt' => $now,
+            'updatedAt' => $now,
         ];
     }
 
@@ -203,7 +204,12 @@ class SyncCatalogToMongoCommand extends Command
             '_id' => sprintf('mag-%s', $magasin->getId()),
             'code' => $magasin->getCode(),
             'name' => $magasin->getName(),
-            'address' => null,
+            'address' => [
+                'street' => null,
+                'city' => null,
+                'zip' => null,
+                'country' => null,
+            ],
             'isActive' => true,
         ];
     }
