@@ -9,6 +9,9 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 
+/**
+ * LEGACY: SQL-based catalog CRUD kept for historical/import purposes.
+ */
 class ArticleCrudController extends AbstractCrudController
 {
     public static function getEntityFqcn(): string

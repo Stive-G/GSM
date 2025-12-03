@@ -28,7 +28,10 @@ class CatalogCategoryRepository extends AbstractMongoCatalogRepository
     /** @return CategoryDto[] */
     public function findAll(): array
     {
-        return array_map(fn (array $doc) => CategoryDto::fromArray($doc), $this->collection()->find([], ['sort' => ['position' => 1, 'name' => 1]])->toArray());
+        return array_map(
+            fn (array $doc) => CategoryDto::fromArray($doc),
+            $this->collection()->find([], ['sort' => ['position' => 1, 'name' => 1]])->toArray()
+        );
     }
 
     /** @return CategoryDto[] */
@@ -86,7 +89,10 @@ class CatalogCategoryRepository extends AbstractMongoCatalogRepository
             throw new \InvalidArgumentException('Category must have an id for update');
         }
 
-        $this->collection()->updateOne(['_id' => new ObjectId($category->id)], ['\$set' => $this->prepareDocument($category)]);
+        $this->collection()->updateOne(
+            ['_id' => new ObjectId($category->id)],
+            ['$set' => $this->prepareDocument($category)]
+        );
     }
 
     public function delete(string $id): void

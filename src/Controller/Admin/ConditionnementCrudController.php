@@ -8,6 +8,9 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 
+/**
+ * LEGACY: SQL-based packaging (kept for reference/import only).
+ */
 class ConditionnementCrudController extends AbstractCrudController
 {
     public static function getEntityFqcn(): string { return Conditionnement::class; }

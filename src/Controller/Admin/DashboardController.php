@@ -59,21 +59,23 @@ class DashboardController extends AbstractDashboardController
                 ->setPermission('ROLE_ADMIN');
         }
 
-        if ($this->isGranted('ROLE_MAGASINIER') || $this->isGranted('ROLE_DIRECTION') || $this->isGranted('ROLE_ADMIN')) {
-            yield MenuItem::linkToRoute('Transfert de stock', 'fa fa-right-left', 'admin_transfer');
-            yield MenuItem::linkToCrud('Historique transferts', 'fa fa-clock-rotate-left', \App\Entity\Transfer::class);
-        }
-
+        yield MenuItem::section('Catalogue (MongoDB)');
         if ($this->isGranted('ROLE_DIRECTION') || $this->isGranted('ROLE_ADMIN')) {
             yield MenuItem::linkToRoute('Catégories', 'fa fa-tags', 'admin_catalog_categories_index');
             yield MenuItem::linkToRoute('Produits', 'fa fa-box', 'admin_catalog_products_index');
             yield MenuItem::linkToRoute('Magasins', 'fa fa-warehouse', 'admin_catalog_magasins_index');
-            yield MenuItem::linkToCrud('Clients', 'fa fa-user', \App\Entity\Client::class);
-            yield MenuItem::linkToCrud('Documents', 'fa fa-file-invoice', \App\Entity\Document::class);
         }
 
+        yield MenuItem::section('Opérations');
         if ($this->isGranted('ROLE_MAGASINIER') || $this->isGranted('ROLE_DIRECTION') || $this->isGranted('ROLE_ADMIN')) {
+            yield MenuItem::linkToRoute('Transfert de stock', 'fa fa-right-left', 'admin_transfer');
+            yield MenuItem::linkToCrud('Historique transferts', 'fa fa-clock-rotate-left', \App\Entity\Transfer::class);
             yield MenuItem::linkToCrud('Mouvements', 'fa fa-right-left', \App\Entity\MouvementStock::class);
+        }
+
+        if ($this->isGranted('ROLE_DIRECTION') || $this->isGranted('ROLE_ADMIN')) {
+            yield MenuItem::linkToCrud('Clients', 'fa fa-user', \App\Entity\Client::class);
+            yield MenuItem::linkToCrud('Documents', 'fa fa-file-invoice', \App\Entity\Document::class);
         }
     }
 }
