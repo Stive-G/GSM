@@ -118,7 +118,10 @@ class CatalogProductRepository extends AbstractMongoCatalogRepository
             throw new \InvalidArgumentException('Product must have an id for update');
         }
 
-        $this->collection()->updateOne(['_id' => new ObjectId($product->id)], ['\$set' => $this->prepareDocument($product)]);
+        $this->collection()->updateOne(
+            ['_id' => new ObjectId($product->id)],
+            ['$set' => $this->prepareDocument($product)]
+        );
     }
 
     public function delete(string $id): void

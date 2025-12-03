@@ -21,6 +21,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
 #[AsCommand(name: 'gsm:sync:catalog-to-mongo', description: 'Import initial du catalogue SQL vers MongoDB (Mongo = vérité)')]
+/**
+ * Utility command kept for initial imports: MongoDB remains the source of truth,
+ * SQL catalog tables are legacy.
+ */
 class SyncCatalogToMongoCommand extends Command
 {
     public function __construct(

@@ -6,6 +6,9 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 
+/**
+ * LEGACY: SQL-based magasins (kept for reference/import only).
+ */
 class MagasinCrudController extends AbstractCrudController
 {
     public static function getEntityFqcn(): string

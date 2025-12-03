@@ -55,7 +55,10 @@ class CatalogMagasinRepository extends AbstractMongoCatalogRepository
             throw new \InvalidArgumentException('Magasin must have an id for update');
         }
 
-        $this->collection()->updateOne(['_id' => new ObjectId($magasin->id)], ['\$set' => $this->prepareDocument($magasin)]);
+        $this->collection()->updateOne(
+            ['_id' => new ObjectId($magasin->id)],
+            ['$set' => $this->prepareDocument($magasin)]
+        );
     }
 
     public function delete(string $id): void
