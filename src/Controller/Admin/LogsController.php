@@ -23,7 +23,7 @@ class LogsController extends AbstractController
         $filter = [];
         if ($type)  $filter['type'] = $type;
         if ($route) $filter['route'] = $route;
-        if ($email) $filter['user.email'] = $email;
+        if ($email) $filter['email'] = $email;
 
         $page  = max(1, (int)$request->query->get('page', 1));
         $limit = 25;
@@ -31,9 +31,9 @@ class LogsController extends AbstractController
 
         $total = $this->logs->count($filter);
         $items = $this->logs->find($filter, [
-            'sort'  => ['ts' => -1],
+            'sort'  => ['createdAt' => 'DESC'],
             'limit' => $limit,
-            'skip'  => $skip,
+            'offset'  => $skip,
         ]);
 
         return $this->render('admin/logs.html.twig', [

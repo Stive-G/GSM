@@ -1,111 +1,98 @@
 {% extends '@EasyAdmin/page/content.html.twig' %}
 
 {% block content %}
-	<h2 class="mb-3">Journal d’activité</h2>
+    <h2 class="mb-3">Journal d’activité</h2>
 
-	<form id="logs-filter" class="row g-2 mb-3" method="get" action="{{ path('admin_logs') }}">
-		<div class="col-md-3">
-			<select name="type" class="form-select">
-				<option value="">Tous types</option>
-				<option value="request" {{ filter.type == 'request' ? 'selected' : '' }}>Requêtes</option>
-				<option value="entity" {{ filter.type == 'entity' ? 'selected' : '' }}>Entités</option>
-			</select>
-		</div>
-		<div class="col-md-3">
-			<input class="form-control" name="route" placeholder="Route (ex: admin, partner_...)" value="{{ filter.route|default('') }}">
-		</div>
-		<div class="col-md-3">
-			<input class="form-control" name="email" placeholder="Email utilisateur" value="{{ filter.email|default('') }}">
-		</div>
-		<div class="col-md-3 d-grid">
-			<button type="submit" class="btn btn-primary" form="logs-filter">Filtrer</button>
-		</div>
-	</form>
+    <form id="logs-filter" class="row g-2 mb-3" method="get" action="{{ path('admin_logs') }}">
+        <div class="col-md-3">
+            <select name="type" class="form-select">
+                <option value="">Tous types</option>
+                <option value="request" {{ filter.type == 'request' ? 'selected' : '' }}>Requêtes</option>
+                <option value="entity" {{ filter.type == 'entity' ? 'selected' : '' }}>Entités</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input class="form-control" name="route" placeholder="Route (ex: admin, partner_...)" value="{{ filter.route|default('') }}">
+        </div>
+        <div class="col-md-3">
+            <input class="form-control" name="email" placeholder="Email utilisateur" value="{{ filter.email|default('') }}">
+        </div>
+        <div class="col-md-3 d-grid">
+            <button type="submit" class="btn btn-primary" form="logs-filter">Filtrer</button>
+        </div>
+    </form>
 
-	<div class="table-responsive">
-		<table class="table table-sm align-middle">
-			<thead>
-				<tr>
-					<th>Date</th>
-					<th>Type</th>
-					<th>Utilisateur</th>
-					<th>Détails</th>
-				</tr>
-			</thead>
-			<tbody>
-				{% for it in items %}
-					{% set ts = it.ts.toDateTime() %}
-					<tr>
-						<td style="white-space:nowrap">{{ ts|date('Y-m-d H:i:s') }}</td>
-						<td>
-							{% if it.type == 'request' %}
-								<span class="badge bg-info">REQ</span>
-							{% else %}
-								<span class="badge bg-secondary">ENT</span>
-							{% endif %}
-						</td>
-						<td>
-							{{ it.user.email|default('anonyme') }}
-							{% if it.user.roles is defined %}
-								<small class="text-muted d-block">{{ it.user.roles|join(', ') }}</small>
-							{% endif %}
-						</td>
-						<td>
-							{% if it.type == 'request' %}
-								<div>
-									<strong>{{ it.method }}</strong>
-									{{ it.path }}
-									<small class="text-muted">({{ it.route|default('-') }})</small>
-								</div>
-								<div>Status:
-									{{ it.status }}
-									— IP:
-									{{ it.ip }}</div>
-								{% if it.body is defined and it.body %}
-									<details class="mt-1">
-										<summary>Payload</summary>
-										<pre class="mb-0"><code>{{ it.body|json_encode(constant('JSON_PRETTY_PRINT')) }}</code></pre>
-									</details>
-								{% endif %}
-							{% else %}
-								<div>{{ it.event|upper }}
-									—
-									{{ it.entity }}
-									#{{ it.id|default('-') }}</div>
-								{% if it.changes is defined and it.changes %}
-									<details class="mt-1">
-										<summary>Diff</summary>
-										<pre class="mb-0"><code>{{ it.changes|json_encode(constant('JSON_PRETTY_PRINT')) }}</code></pre>
-									</details>
-								{% endif %}
-								{% if it.comment is defined and it.comment %}
-									<div class="text-muted">Note:
-										{{ it.comment }}</div>
-								{% endif %}
-							{% endif %}
-						</td>
-					</tr>
-				{% else %}
-					<tr>
-						<td colspan="4" class="text-center text-muted">Aucun log</td>
-					</tr>
-				{% endfor %}
-			</tbody>
-		</table>
-	</div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Utilisateur</th>
+                <th>Détails</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for it in items %}
+                <tr>
+                    <td style="white-space:nowrap">{{ it.createdAt|date('Y-m-d H:i:s') }}</td>
+                    <td>
+                        {% if it.type == 'request' %}
+                            <span class="badge bg-info">REQ</span>
+                        {% else %}
+                            <span class="badge bg-secondary">ENT</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ it.user.email|default('anonyme') }}
+                        {% if it.user.roles is defined %}
+                            <small class="text-muted d-block">{{ it.user.roles|join(', ') }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if it.type == 'request' %}
+                            <div>
+                                <strong>{{ it.payload.method|default('') }}</strong>
+                                {{ it.payload.path|default('') }}
+                                <small class="text-muted">({{ it.route|default('-') }})</small>
+                            </div>
+                            <div>Status: {{ it.payload.status|default('-') }} — IP: {{ it.payload.ip|default('-') }}</div>
+                            {% if it.payload.body is defined and it.payload.body %}
+                                <details class="mt-1">
+                                    <summary>Payload</summary>
+                                    <pre class="mb-0"><code>{{ it.payload.body|json_encode(constant('JSON_PRETTY_PRINT')) }}</code></pre>
+                                </details>
+                            {% endif %}
+                        {% else %}
+                            <div>{{ it.payload.event|upper }} — {{ it.payload.entity|default('-') }} #{{ it.payload.id|default('-') }}</div>
+                            {% if it.payload.changes is defined and it.payload.changes %}
+                                <details class="mt-1">
+                                    <summary>Diff</summary>
+                                    <pre class="mb-0"><code>{{ it.payload.changes|json_encode(constant('JSON_PRETTY_PRINT')) }}</code></pre>
+                                </details>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted">Aucun log</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-	{% if pages > 1 %}
-		<nav>
-			<ul class="pagination">
-				{% for p in 1..pages %}
-					<li class="page-item {{ p == page ? 'active' : '' }}">
-						<a class="page-link" href="{{ path('admin_logs', app.request.query.all|merge({'page': p})) }}">
-							{{ p }}
-						</a>
-					</li>
-				{% endfor %}
-			</ul>
-		</nav>
-	{% endif %}
+    {% if pages > 1 %}
+        <nav>
+            <ul class="pagination">
+                {% for p in 1..pages %}
+                    <li class="page-item {{ p == page ? 'active' : '' }}">
+                        <a class="page-link" href="{{ path('admin_logs', app.request.query.all|merge({'page': p})) }}">{{ p }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    {% endif %}
 
 {% endblock %}

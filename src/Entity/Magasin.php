@@ -4,6 +4,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: \App\Repository\MagasinRepository::class)]
 
+// LEGACY SQL entity for catalogue (catalogue Mongo est désormais la source de vérité).
 class Magasin
 {
     #[ORM\Id, ORM\GeneratedValue, ORM\Column] private ?int $id = null;

@@ -18,20 +18,11 @@ services:
     arguments:
       - '%env(MONGODB_URI)%'
 
-  # 3) (Optionnel) La database par défaut comme service, pour l’injecter directement
+  # 3) (Optionnel) La database Mongo côté catalogue
   MongoDB\Database:
     factory: ['@MongoDB\Client', 'selectDatabase']
     arguments:
       - '%env(MONGODB_DB)%'
 
-  # 4) (Optionnel) Une collection (ex: logs) comme service
-  MongoDB\Collection:
-    factory: ['@MongoDB\Database', 'selectCollection']
-    arguments:
-      - 'logs'
-
-  # 5) Ton LogService qui dépend du client (ou de la DB)
-  App\Service\LogService:
-    arguments:
-      - '@MongoDB\Client'      # ou remplace par '@MongoDB\Database' si tu préfères injecter la DB
-      - '%env(MONGODB_DB)%'
+  # MongoDB collections spécifiques catalogue (choisir dans les repositories)
+  # Les repositories Catalog* sélectionneront directement leurs collections.

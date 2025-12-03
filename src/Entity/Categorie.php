@@ -6,6 +6,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
+// LEGACY SQL entity for catalogue (catalogue Mongo est désormais la source de vérité).
 class Categorie
 {
     #[ORM\Id]

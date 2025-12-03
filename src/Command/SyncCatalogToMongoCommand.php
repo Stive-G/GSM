@@ -20,7 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
-#[AsCommand(name: 'gsm:sync:catalog-to-mongo', description: 'Synchronise le catalogue MySQL vers MongoDB')]
+#[AsCommand(name: 'gsm:sync:catalog-to-mongo', description: 'Import initial du catalogue SQL vers MongoDB (Mongo = vérité)')]
 class SyncCatalogToMongoCommand extends Command
 {
     public function __construct(

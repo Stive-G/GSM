@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 )]
 #[ORM\Index(columns: ['article_id'], name: 'idx_stock_article')]
 #[ORM\Index(columns: ['magasin_id'], name: 'idx_stock_magasin')]
+// LEGACY SQL entity for catalogue (catalogue Mongo est désormais la source de vérité).
 class Stock
 {
     #[ORM\Id]

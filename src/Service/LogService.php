@@ -1,58 +1,93 @@
 <?php
+
 namespace App\Service;
 
-use MongoDB\Client;
-use MongoDB\Collection;
+use App\Entity\ActionLog;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 class LogService
 {
-    private Collection $col;
-
-    public function __construct(Client $client, string $dbName)
+    public function __construct(private readonly EntityManagerInterface $em)
     {
-        $this->col = $client->selectCollection($dbName, 'actions'); // collection "actions"
-        // Index utiles
-        $this->col->createIndex(['ts' => -1]);
-        $this->col->createIndex(['user.id' => 1]);
-        $this->col->createIndex(['route' => 1]);
-        $this->col->createIndex(['type' => 1]); // 'request' | 'entity'
     }
 
     public function logRequest(array $data): void
     {
-        $data['type'] = 'request';
-        $data['ts'] = new \MongoDB\BSON\UTCDateTime((int)(microtime(true) * 1000));
-        $this->col->insertOne($data);
+        $log = new ActionLog();
+        $log->setType('request');
+        $log->setRoute($data['route'] ?? null);
+        $log->setUser($data['user'] ?? null);
+        $log->setPayload($data);
+
+        $this->em->persist($log);
+        $this->em->flush();
     }
 
     public function logEntity(string $event, object $entity, array $changes, ?UserInterface $user = null): void
     {
-        /** @var object $user */
-        $doc = [
-            'type'    => 'entity',
-            'event'   => $event, // created|updated|deleted
-            'entity'  => get_class($entity),
-            'id'      => method_exists($entity, 'getId') ? $entity->getId() : null,
+        $payload = [
+            'event' => $event,
+            'entity' => get_class($entity),
+            'id' => method_exists($entity, 'getId') ? $entity->getId() : null,
             'changes' => $changes,
-            'user'    => $user ? [
-                'id'    => method_exists($user, 'getId') ? $user->getId() : null,
+        ];
+
+        $log = new ActionLog();
+        $log->setType('entity');
+        $log->setPayload($payload);
+
+        if ($user) {
+            $log->setUser([
+                'id' => method_exists($user, 'getId') ? $user->getId() : null,
                 'email' => method_exists($user, 'getUserIdentifier') ? $user->getUserIdentifier() : null,
                 'roles' => method_exists($user, 'getRoles') ? $user->getRoles() : [],
-            ] : null,
-            'ts' => new \MongoDB\BSON\UTCDateTime((int)(microtime(true) * 1000)),
-        ];
-        $this->col->insertOne($doc);
+            ]);
+        }
+
+        $this->em->persist($log);
+        $this->em->flush();
     }
 
     public function find(array $filter = [], array $options = []): array
     {
-        $cursor = $this->col->find($filter, $options);
-        return iterator_to_array($cursor);
+        $repository = $this->em->getRepository(ActionLog::class);
+        $criteria = array_filter([
+            'type' => $filter['type'] ?? null,
+            'route' => $filter['route'] ?? null,
+        ], static fn ($value) => $value !== null && $value !== '');
+
+        $items = $repository->findBy(
+            $criteria,
+            $options['sort'] ?? ['createdAt' => 'DESC'],
+            $options['limit'] ?? null,
+            $options['offset'] ?? null
+        );
+
+        if (!empty($filter['email'])) {
+            $items = array_filter($items, static fn (ActionLog $log) => ($log->getUser()['email'] ?? null) === $filter['email']);
+        }
+
+        return $items;
     }
 
     public function count(array $filter = []): int
     {
-        return $this->col->countDocuments($filter);
+        $repository = $this->em->getRepository(ActionLog::class);
+        $criteria = array_filter([
+            'type' => $filter['type'] ?? null,
+            'route' => $filter['route'] ?? null,
+        ], static fn ($value) => $value !== null && $value !== '');
+
+        $count = $repository->count($criteria);
+
+        if (!empty($filter['email'])) {
+            $count = count(array_filter(
+                $repository->findBy($criteria),
+                static fn (ActionLog $log) => ($log->getUser()['email'] ?? null) === $filter['email']
+            ));
+        }
+
+        return $count;
     }
 }

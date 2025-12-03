@@ -6,7 +6,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
 #[ORM\Entity(repositoryClass: \App\Repository\ArticleRepository::class)]
-
+// LEGACY SQL entity for catalogue (catalogue Mongo est désormais la source de vérité).
 class Article
 {
     #[ORM\Id]
