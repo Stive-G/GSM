@@ -1,50 +1,58 @@
 # config/packages/security.yaml
 security:
-  role_hierarchy:
-    ROLE_ADMIN:       [ROLE_DIRECTION, ROLE_MAGASINIER, ROLE_VENDEUR]
-    ROLE_DIRECTION:   [ROLE_MAGASINIER, ROLE_VENDEUR]
-    ROLE_MAGASINIER:  [ROLE_VENDEUR]
-    ROLE_VENDEUR:     []
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_DIRECTION, ROLE_MAGASINIER, ROLE_VENDEUR]
+        ROLE_DIRECTION: [ROLE_MAGASINIER, ROLE_VENDEUR]
+        ROLE_MAGASINIER: [ROLE_VENDEUR]
+        ROLE_VENDEUR: []
 
-  password_hashers:
-    Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: "auto"
 
-  providers:
-    app_user_provider:
-      entity:
-        class: App\Entity\User
-        property: email
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
 
-  firewalls:
-    dev:
-      pattern: ^/(_(profiler|wdt)|css|images|js)/
-      security: false
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
 
-    main:
-      lazy: true
-      provider: app_user_provider
-      custom_authenticator: App\Security\LoginFormAuthenticator
+        main:
+            lazy: true
+            provider: app_user_provider
+            custom_authenticator: App\Security\LoginFormAuthenticator
 
-      logout:
-        path: app_logout
-        target: /
+            logout:
+                path: app_logout
+                target: /
 
-      # (optionnel) "Se souvenir de moi"
-      remember_me:
-        secret: '%kernel.secret%'
-        lifetime: 604800   # 7 jours
-        path: /
-        # always_remember_me: true
+            remember_me:
+                secret: "%kernel.secret%"
+                lifetime: 604800 # 7 jours
+                path: /
 
-  access_control:
-    - { path: ^/login, roles: PUBLIC_ACCESS }  # évite une boucle de redirection
-    - { path: ^/admin, roles: ROLE_VENDEUR }     # mets ROLE_VENDEUR si tu veux ouvrir aux vendeurs
+    access_control:
+        # Login / logout accessibles à tous
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/logout, roles: PUBLIC_ACCESS }
+
+        # Gestion des utilisateurs : uniquement ADMIN
+        - { path: ^/admin/users, roles: ROLE_ADMIN }
+
+        # Logs : uniquement ADMIN
+        - { path: ^/admin/action-log, roles: ROLE_ADMIN }
+
+        # Back-office général : accessible à tous les rôles métier (vendeur et plus)
+        - { path: ^/admin, roles: ROLE_VENDEUR }
 
 when@test:
-  security:
-    password_hashers:
-      Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
-        algorithm: auto
-        cost: 4
-        time_cost: 3
-        memory_cost: 10
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10
