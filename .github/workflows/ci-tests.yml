@@ -55,6 +55,8 @@ jobs:
                   echo "APP_ENV=test" > .env
                   echo "APP_SECRET=ci_test_secret" >> .env
                   echo 'DATABASE_URL="mysql://root:root@127.0.0.1:3306/gsm"' >> .env
+                  echo 'DEFAULT_URI="http://localhost"' >> .env
+
               # working-directory: .  # inutile, par défaut on est déjà à la racine
 
             - name: Cache Composer dependencies
