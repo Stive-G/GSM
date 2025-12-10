@@ -37,6 +37,7 @@ jobs:
         env:
             APP_ENV: test
             DATABASE_URL: "mysql://root:root@127.0.0.1:3306/gsm"
+            # MONGODB_URL: "mongodb://127.0.0.1:27017" # si tu en as besoin plus tard
 
         steps:
             - name: Checkout repository
@@ -48,6 +49,13 @@ jobs:
                   php-version: "8.4"
                   extensions: mbstring, intl, pdo_mysql
                   coverage: none
+
+            - name: Create .env for CI
+              run: |
+                  echo "APP_ENV=test" > .env
+                  echo "APP_SECRET=ci_test_secret" >> .env
+                  echo 'DATABASE_URL="mysql://root:root@127.0.0.1:3306/gsm"' >> .env
+              # working-directory: .  # inutile, par défaut on est déjà à la racine
 
             - name: Cache Composer dependencies
               uses: actions/cache@v4
