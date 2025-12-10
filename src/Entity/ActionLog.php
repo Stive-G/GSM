@@ -97,4 +97,22 @@ class ActionLog
 
         return $this;
     }
+
+    /**
+     * Propriété virtuelle pour l’affichage EasyAdmin.
+     */
+    public function getUserLabel(): string
+    {
+        $u = $this->user;
+
+        if (!\is_array($u) || (empty($u['email']) && empty($u['id']))) {
+            return 'Anonyme';
+        }
+
+        if (!empty($u['email'])) {
+            return (string) $u['email'];
+        }
+
+        return 'ID ' . $u['id'];
+    }
 }

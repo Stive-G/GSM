@@ -1,28 +1,48 @@
-# config/services.yaml
 parameters:
-  # Paramètres globaux si tu veux (facultatif)
-  # mongodb_db: '%env(MONGODB_DB)%'
+    # Si tu veux déclarer des paramètres globaux, tu peux les mettre ici
+    # mongodb_db: '%env(MONGODB_DB)%'
 
 services:
-  _defaults:
-    autowire: true
-    autoconfigure: true
+    _defaults:
+        autowire: true
+        autoconfigure: true
 
-  # 1) Enregistre toutes tes classes App\ comme services
-  App\:
-    resource: '../src/'
+    # ------------------------------------------------------
+    # 1) Tous les services App\ sont autowirés automatiquement
+    # ------------------------------------------------------
+    App\:
+        resource: "../src/"
+        exclude:
+            - "../src/DependencyInjection/"
+            - "../src/Entity/"
+            - "../src/Kernel.php"
 
-  # 2) Client MongoDB (vient du package composer mongodb/mongodb)
-  'MongoDB\Client':
-    class: 'MongoDB\Client'
-    arguments:
-      - '%env(MONGODB_URI)%'
+    # ------------------------------------------------------
+    # 2) CLIENT MONGODB (driver officiel mongodb/mongodb)
+    # ------------------------------------------------------
+    MongoDB\Client:
+        class: MongoDB\Client
+        arguments:
+            - "%env(MONGODB_URI)%"
 
-  # 3) (Optionnel) La database Mongo côté catalogue
-  MongoDB\Database:
-    factory: ['@MongoDB\Client', 'selectDatabase']
-    arguments:
-      - '%env(MONGODB_DB)%'
+    # ------------------------------------------------------
+    # 3) DATABASE Mongo à partir du client
+    # ------------------------------------------------------
+    MongoDB\Database:
+        factory: ['@MongoDB\Client', "selectDatabase"]
+        arguments:
+            - "%env(MONGODB_DB)%"
 
-  # MongoDB collections spécifiques catalogue (choisir dans les repositories)
-  # Les repositories Catalog* sélectionneront directement leurs collections.
+    # ------------------------------------------------------
+    # 4) MongoCatalogClient (service principal catalogue)
+    #    → indispensable car il attend (Client $client, string $dbName)
+    # ------------------------------------------------------
+    App\Infrastructure\Mongo\MongoCatalogClient:
+        arguments:
+            $client: '@MongoDB\Client'
+            $dbName: "%env(MONGODB_DB)%"
+
+    # ------------------------------------------------------
+    # 5) (Optionnel) Si tu veux override des services spécifiques
+    #    rien d'autre n'est nécessaire pour le moment
+    # ------------------------------------------------------

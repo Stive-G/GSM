@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}DocumentLigne{% endblock %}
+
+{% block body %}
+    <h1>DocumentLigne</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Id</th>
+                <td>{{ document_ligne.id }}</td>
+            </tr>
+            <tr>
+                <th>ProductIdMongo</th>
+                <td>{{ document_ligne.productIdMongo }}</td>
+            </tr>
+            <tr>
+                <th>ProductLabel</th>
+                <td>{{ document_ligne.productLabel }}</td>
+            </tr>
+            <tr>
+                <th>Unit</th>
+                <td>{{ document_ligne.unit }}</td>
+            </tr>
+            <tr>
+                <th>UnitPriceHt</th>
+                <td>{{ document_ligne.unitPriceHt }}</td>
+            </tr>
+            <tr>
+                <th>Quantity</th>
+                <td>{{ document_ligne.quantity }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_document_ligne_index') }}">back to list</a>
+
+    <a href="{{ path('app_document_ligne_edit', {'id': document_ligne.id}) }}">edit</a>
+
+    {{ include('document_ligne/_delete_form.html.twig') }}
+{% endblock %}

@@ -3,7 +3,6 @@
 namespace App\Repository\Catalog;
 
 use App\Dto\Catalog\StockDto;
-use MongoDB\BSON\ObjectId;
 use MongoDB\Collection;
 use MongoDB\Database;
 
@@ -15,7 +14,12 @@ class CatalogStockRepository extends AbstractMongoCatalogRepository
     {
         parent::__construct($database);
         $this->collection = $this->database->selectCollection('stocks');
-        $this->collection->createIndex(['productId' => 1, 'variantId' => 1, 'magasinId' => 1], ['unique' => true]);
+
+        // Index composite : (productId, variantId, magasinId) uniques
+        $this->collection->createIndex(
+            ['productId' => 1, 'variantId' => 1, 'magasinId' => 1],
+            ['unique' => true]
+        );
     }
 
     protected function getCollection(): Collection
@@ -23,12 +27,20 @@ class CatalogStockRepository extends AbstractMongoCatalogRepository
         return $this->collection;
     }
 
+    /**
+     * Upsert d’une ligne de stock
+     */
     public function upsert(StockDto $stock): void
     {
         $doc = $stock->toArray();
-        $doc['productId'] = new ObjectId($stock->productId);
-        $doc['variantId'] = $stock->variantId ? new ObjectId($stock->variantId) : null;
-        $doc['magasinId'] = new ObjectId($stock->magasinId);
+
+        // On force les types de base pour rester cohérent partout :
+        // - productId : string (id du produit Mongo)
+        // - variantId : string|null (ou "default")
+        // - magasinId : int (id SQL du magasin)
+        $doc['productId'] = (string) $stock->productId;
+        $doc['variantId'] = $stock->variantId !== null ? (string) $stock->variantId : null;
+        $doc['magasinId'] = (int) $stock->magasinId;
 
         $this->collection()->replaceOne(
             [
@@ -44,34 +56,43 @@ class CatalogStockRepository extends AbstractMongoCatalogRepository
     /** @return StockDto[] */
     public function findAll(): array
     {
-        return array_map(fn (array $doc) => StockDto::fromArray($doc), $this->collection()->find([])->toArray());
+        return array_map(
+            fn(array $doc) => StockDto::fromArray($doc),
+            $this->collection()->find([])->toArray()
+        );
     }
 
     /** @return StockDto[] */
     public function findByProduct(string $productId): array
     {
-        return array_map(fn (array $doc) => StockDto::fromArray($doc), $this->collection()->find(['productId' => new ObjectId($productId)])->toArray());
+        return array_map(
+            fn(array $doc) => StockDto::fromArray($doc),
+            $this->collection()->find(['productId' => (string) $productId])->toArray()
+        );
     }
 
     /** @return StockDto[] */
     public function findByProductAndVariant(string $productId, ?string $variantId): array
     {
-        $filter = ['productId' => new ObjectId($productId)];
+        $filter = ['productId' => (string) $productId];
         if ($variantId !== null) {
-            $filter['variantId'] = new ObjectId($variantId);
+            $filter['variantId'] = (string) $variantId;
         }
 
-        return array_map(fn (array $doc) => StockDto::fromArray($doc), $this->collection()->find($filter)->toArray());
+        return array_map(
+            fn(array $doc) => StockDto::fromArray($doc),
+            $this->collection()->find($filter)->toArray()
+        );
     }
 
-    public function delete(string $productId, ?string $variantId, string $magasinId): void
+    public function delete(string $productId, ?string $variantId, string|int $magasinId): void
     {
         $filter = [
-            'productId' => new ObjectId($productId),
-            'magasinId' => new ObjectId($magasinId),
+            'productId' => (string) $productId,
+            'magasinId' => (int) $magasinId,
         ];
         if ($variantId !== null) {
-            $filter['variantId'] = new ObjectId($variantId);
+            $filter['variantId'] = (string) $variantId;
         }
 
         $this->collection()->deleteOne($filter);

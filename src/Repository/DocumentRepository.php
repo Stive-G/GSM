@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Repository;
 
 use App\Entity\Document;
@@ -16,26 +17,14 @@ class DocumentRepository extends ServiceEntityRepository
     }
 
     /**
-     * Retourne les ventes (type = VENTE)
+     * Retourne les documents d’un type donné
+     * Exemple : "devis", "bon_livraison", "facture", "vente", etc.
      */
-    public function findVentes(): array
+    public function findByType(string $type): array
     {
         return $this->createQueryBuilder('d')
             ->andWhere('d.type = :t')
-            ->setParameter('t', Document::TYPE_VENTE)
-            ->orderBy('d.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-    }
-
-    /**
-     * Retourne les devis
-     */
-    public function findDevis(): array
-    {
-        return $this->createQueryBuilder('d')
-            ->andWhere('d.type = :t')
-            ->setParameter('t', Document::TYPE_DEVIS)
+            ->setParameter('t', $type)
             ->orderBy('d.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
