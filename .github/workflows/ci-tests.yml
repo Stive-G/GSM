@@ -37,9 +37,6 @@ jobs:
         env:
             APP_ENV: test
             DATABASE_URL: "mysql://root:root@127.0.0.1:3306/gsm"
-            # Adapte le DSN Mongo si ton code l'utilise depuis .env.test
-            # Exemple:
-            # MONGODB_URL: "mongodb://127.0.0.1:27017"
 
         steps:
             - name: Checkout repository
@@ -55,16 +52,13 @@ jobs:
             - name: Cache Composer dependencies
               uses: actions/cache@v4
               with:
-                  path: |
-                      **/vendor
-                  key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+                  path: vendor
+                  key: ${{ runner.os }}-php-${{ hashFiles('composer.lock') }}
                   restore-keys: |
                       ${{ runner.os }}-php-
 
             - name: Install Composer dependencies
-              run: |
-                  composer install --no-progress --no-interaction --prefer-dist
-              working-directory: ./gsm-app
+              run: composer install --no-progress --no-interaction --prefer-dist
 
             - name: Wait for MySQL to be ready
               run: |
@@ -78,11 +72,7 @@ jobs:
                   done
 
             - name: Create test database schema
-              run: |
-                  php bin/console doctrine:schema:update --force --env=test
-              working-directory: ./gsm-app
+              run: php bin/console doctrine:schema:update --force --env=test
 
             - name: Run PHPUnit
-              run: |
-                  php bin/phpunit
-              working-directory: ./gsm-app
+              run: php bin/phpunit
