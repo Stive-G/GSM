@@ -38,6 +38,7 @@ jobs:
             APP_ENV: test
             DATABASE_URL: "mysql://root:root@127.0.0.1:3306/gsm"
             MONGODB_URL: "mongodb://127.0.0.1:27017/gsm"
+            MONGODB_DB: "gsm"
 
         steps:
             - name: Checkout repository
@@ -57,6 +58,7 @@ jobs:
                   echo 'DATABASE_URL="mysql://root:root@127.0.0.1:3306/gsm"' >> .env
                   echo 'DEFAULT_URI="http://localhost"' >> .env
                   echo 'MONGODB_URI="mongodb://127.0.0.1:27017/gsm"' >> .env
+                  echo 'MONGODB_DB="gsm"' >> .env
 
               # working-directory: .  # inutile, par défaut on est déjà à la racine
 
