@@ -1,0 +1,65 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Stocks (Mongo)
+{% endblock %}
+
+{% block main %}
+	<div class="content-panel">
+		<form method="get" class="row g-2 mb-3">
+			<div class="col-md-8">
+				<input type="text" name="productId" value="{{ filters.productId }}" class="form-control" placeholder="Filtrer par ID produit (Mongo)…">
+			</div>
+			<div class="col-md-4 text-end">
+				<button class="btn btn-primary">
+					<i class="fa fa-filter me-1"></i>Filtrer
+				</button>
+				<a href="{{ path('admin_catalog_stocks_new') }}" class="btn btn-success">
+					<i class="fa fa-plus me-1"></i>Nouvelle ligne
+				</a>
+			</div>
+		</form>
+
+		<div class="table-responsive">
+			<table class="table table-striped align-middle">
+				<thead>
+					<tr>
+						<th>Produit</th>
+						<th class="text-end">Quantité</th>
+						<th style="width: 120px;"></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for s in stocks %}
+						<tr>
+							<td>
+								<div class="fw-semibold">{{ s.productLabel }}</div>
+								<div class="text-muted" style="font-size:.8rem">
+									ID :
+									<code>{{ s.productId }}</code>
+								</div>
+							</td>
+							<td class="text-end">{{ s.quantity }}</td>
+							<td class="text-end">
+								<a href="{{ path('admin_catalog_stocks_edit', {id: s.id}) }}" class="btn btn-sm btn-outline-primary">
+									<i class="fa fa-pen"></i>
+								</a>
+								<form method="post" action="{{ path('admin_catalog_stocks_delete', {id: s.id}) }}" class="d-inline" onsubmit="return confirm('Supprimer cette ligne de stock ?');">
+									<input type="hidden" name="_token" value="{{ csrf_token('delete_stock_' ~ s.id) }}">
+									<button class="btn btn-sm btn-outline-danger">
+										<i class="fa fa-trash"></i>
+									</button>
+								</form>
+							</td>
+						</tr>
+					{% else %}
+						<tr>
+							<td colspan="3" class="text-center text-muted">
+								Aucune ligne de stock pour le moment.
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+{% endblock %}

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Repository;
 
 use App\Entity\DocumentLigne;
@@ -16,12 +17,12 @@ class DocumentLigneRepository extends ServiceEntityRepository
     }
 
     /**
-     * Calcul du total TTC d’un document (simple addition quantité × prix)
+     * Calcul du total HT d’un document (quantité × prix unitaire HT)
      */
     public function sumTotalByDocument(int $documentId): float
     {
         $result = $this->createQueryBuilder('l')
-            ->select('SUM(l.quantity * l.unitPrice) as total')
+            ->select('SUM(l.quantity * l.unitPriceHt) AS total')
             ->andWhere('l.document = :id')
             ->setParameter('id', $documentId)
             ->getQuery()

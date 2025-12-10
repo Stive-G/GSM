@@ -1,30 +1,44 @@
 <?php
+
 namespace App\Form;
 
 use App\Entity\DocumentLigne;
-use App\Entity\Article;
-use App\Entity\Conditionnement;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class DocumentLigneType extends AbstractType
 {
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('article', EntityType::class, [
-                'class' => Article::class,
-                'choice_label' => 'label',
+            // Id MongoDB du produit (on pourra plus tard mettre un autocomplete)
+            ->add('productIdMongo', TextType::class, [
+                'label' => 'ID produit Mongo',
             ])
-            ->add('conditionnement', EntityType::class, [
-                'class' => Conditionnement::class,
-                'choice_label' => 'label',
+            // Libellé snapshoté
+            ->add('productLabel', TextType::class, [
+                'label' => 'Libellé produit',
             ])
-            ->add('designation', TextType::class)
-            ->add('quantity', NumberType::class, ['scale' => 4])
-            ->add('unitPrice', NumberType::class, ['scale' => 2]);
+            ->add('unit', TextType::class, [
+                'label' => 'Unité (sac, palette, m², …)',
+            ])
+            ->add('quantity', NumberType::class, [
+                'label' => 'Quantité',
+                'scale' => 4,
+            ])
+            ->add('unitPriceHt', NumberType::class, [
+                'label' => 'Prix unitaire HT',
+                'scale' => 2,
+            ]);
+    }
+
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->setDefaults([
+            'data_class' => DocumentLigne::class,
+        ]);
     }
 }

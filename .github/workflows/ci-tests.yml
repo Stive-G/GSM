@@ -1,0 +1,91 @@
+name: CI - GSM Tests
+
+on:
+    push:
+        branches: [main, dev]
+    pull_request:
+        branches: [main, dev]
+
+jobs:
+    tests:
+        runs-on: ubuntu-latest
+
+        services:
+            mysql:
+                image: mysql:8.0
+                env:
+                    MYSQL_ROOT_PASSWORD: root
+                    MYSQL_DATABASE: gsm_test
+                ports:
+                    - 3306:3306
+                options: >-
+                    --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=5
+
+            mongo:
+                image: mongo:6.0
+                ports:
+                    - 27017:27017
+                options: >-
+                    --health-cmd="mongosh --eval 'db.runCommand({ ping: 1 })' || exit 1"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=5
+
+        env:
+            APP_ENV: test
+            DATABASE_URL: "mysql://root:root@127.0.0.1:3306/gsm"
+            MONGODB_URL: "mongodb://127.0.0.1:27017/gsm"
+            MONGODB_DB: "gsm"
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: "8.4"
+                  extensions: mbstring, intl, pdo_mysql
+                  coverage: none
+
+            - name: Create .env for CI
+              run: |
+                  echo "APP_ENV=test" > .env
+                  echo "APP_SECRET=ci_test_secret" >> .env
+                  echo 'DATABASE_URL="mysql://root:root@127.0.0.1:3306/gsm"' >> .env
+                  echo 'DEFAULT_URI="http://localhost"' >> .env
+                  echo 'MONGODB_URI="mongodb://127.0.0.1:27017/gsm"' >> .env
+                  echo 'MONGODB_DB="gsm"' >> .env
+
+              # working-directory: .  # inutile, par défaut on est déjà à la racine
+
+            - name: Cache Composer dependencies
+              uses: actions/cache@v4
+              with:
+                  path: vendor
+                  key: ${{ runner.os }}-php-${{ hashFiles('composer.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-php-
+
+            - name: Install Composer dependencies
+              run: composer install --no-progress --no-interaction --prefer-dist
+
+            - name: Wait for MySQL to be ready
+              run: |
+                  for i in `seq 1 30`; do
+                    if mysqladmin ping -h 127.0.0.1 --silent; then
+                      echo "MySQL is up!";
+                      break;
+                    fi
+                    echo "Waiting for MySQL ($i)..."
+                    sleep 2
+                  done
+
+            - name: Create test database schema
+              run: php bin/console doctrine:schema:update --force --env=test
+
+            - name: Run PHPUnit
+              run: ./vendor/bin/phpunit
