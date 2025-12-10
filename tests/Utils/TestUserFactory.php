@@ -12,20 +12,16 @@ class TestUserFactory
     {
         $repo = $em->getRepository(User::class);
 
-        // Si déjà présent, on le réutilise
-        $existing = $repo->findOneBy(['email' => 'admin@test.com']);
-        if ($existing instanceof User) {
-            return $existing;
+        // Si l'admin existe déjà, on le réutilise
+        $user = $repo->findOneBy(['email' => 'admin@test.com']);
+        if ($user) {
+            return $user;
         }
 
         $user = new User();
         $user->setEmail('admin@test.com');
-
-        // On lui donne ici tous les rôles nécessaires pour /admin
-        $user->setRoles(['ROLE_ADMIN', 'ROLE_VENDEUR']);
-
-        $hashed = $hasher->hashPassword($user, 'admin123');
-        $user->setPassword($hashed);
+        $user->setRoles(['ROLE_ADMIN']);
+        $user->setPassword($hasher->hashPassword($user, 'admin123'));
 
         $em->persist($user);
         $em->flush();
@@ -37,18 +33,36 @@ class TestUserFactory
     {
         $repo = $em->getRepository(User::class);
 
-        // Idem : si déjà en base, on réutilise
-        $existing = $repo->findOneBy(['email' => 'user@test.com']);
-        if ($existing instanceof User) {
-            return $existing;
+        $user = $repo->findOneBy(['email' => 'user@test.com']);
+        if ($user) {
+            return $user;
         }
 
         $user = new User();
         $user->setEmail('user@test.com');
-        $user->setRoles(['ROLE_USER']);
+        // Pas de rôle particulier ici => pas accès à /admin
+        $user->setRoles([]); // ou ['ROLE_USER'] selon ton appli
+        $user->setPassword($hasher->hashPassword($user, 'user123'));
 
-        $hashed = $hasher->hashPassword($user, 'user123');
-        $user->setPassword($hashed);
+        $em->persist($user);
+        $em->flush();
+
+        return $user;
+    }
+
+    public static function createVendeur(EntityManagerInterface $em, UserPasswordHasherInterface $hasher): User
+    {
+        $repo = $em->getRepository(User::class);
+
+        $user = $repo->findOneBy(['email' => 'vendeur@test.com']);
+        if ($user) {
+            return $user;
+        }
+
+        $user = new User();
+        $user->setEmail('vendeur@test.com');
+        $user->setRoles(['ROLE_VENDEUR']);
+        $user->setPassword($hasher->hashPassword($user, 'vendeur123'));
 
         $em->persist($user);
         $em->flush();
