@@ -15,4 +15,12 @@ RUN pecl install mongodb \
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# PHP config (memory limit, etc.)
+COPY docker/php/conf.d/*.ini /usr/local/etc/php/conf.d/
+
 WORKDIR /var/www/html
+
+# Fix permissions Symfony (cache/log) pour éviter monolog "permission denied"
+RUN mkdir -p /var/www/html/var/cache /var/www/html/var/log \
+    && chown -R www-data:www-data /var/www/html/var \
+    && chmod -R 775 /var/www/html/var

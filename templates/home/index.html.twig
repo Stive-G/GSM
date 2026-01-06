@@ -1,9 +1,72 @@
 {% extends 'base.html.twig' %}
+
+{% block title %}GSM
+{% endblock %}
+
 {% block body %}
-<h1>Bienvenue sur GSM 👋</h1>
-{% if app.user %}
-<p>Connecté en tant que <strong>{{ app.user.email }}</strong></p>
-{% else %}
-<p><a href="{{ path('app_login') }}">Se connecter</a></p>
-{% endif %}
+	<div class="px-4 py-5 my-5 text-center">
+		<div class="mb-4">
+			<span class="badge text-bg-warning px-3 py-2">BETA</span>
+		</div>
+
+		<h1 class="display-5 fw-bold">GSM</h1>
+		<p class="lead mb-4">
+			Gestion de Stock & Matériaux — application en cours de construction.
+		</p>
+
+		<div class="col-lg-8 mx-auto">
+			<div class="alert alert-info text-start" role="alert">
+				<div class="d-flex gap-2 align-items-start">
+					<div class="fs-4">🚧</div>
+					<div>
+						<strong>En cours de développement</strong>
+						<div class="small opacity-75">
+							Modules prévus : clients, documents (devis/BL/factures), catalogue produits, stock, traçabilité & logs.
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+				<a class="btn btn-primary btn-lg px-4" href="{{ path('admin') }}">Accéder au back-office</a>
+
+				{% if app.user %}
+					<a class="btn btn-outline-secondary btn-lg px-4" href="{{ path('admin') }}">Continuer</a>
+				{% else %}
+					<a class="btn btn-outline-secondary btn-lg px-4" href="{{ path('app_login') }}">Connexion</a>
+				{% endif %}
+			</div>
+
+			<div class="mt-4 small text-muted">
+				Version dev • Symfony 7 • MySQL (transactionnel) + MongoDB (catalogue)
+			</div>
+		</div>
+	</div>
+
+	<div class="container marketing pb-4">
+		<hr class="featurette-divider">
+
+		<div class="row g-4">
+			<div class="col-md-4">
+				<div class="p-4 border rounded-3 h-100">
+					<h3 class="h5">📦 Catalogue</h3>
+					<p class="mb-0 small text-muted">Produits matériaux avec attributs flexibles (MongoDB).</p>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="p-4 border rounded-3 h-100">
+					<h3 class="h5">🧾 Documents</h3>
+					<p class="mb-0 small text-muted">Devis, BL, factures, lignes, TVA, statuts (MySQL).</p>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="p-4 border rounded-3 h-100">
+					<h3 class="h5">🧠 Traçabilité</h3>
+					<p class="mb-0 small text-muted">Journal d’actions, historique, contrôle d’accès par rôles.</p>
+				</div>
+			</div>
+		</div>
+
+		<hr class="featurette-divider">
+	</div>
 {% endblock %}
