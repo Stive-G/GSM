@@ -1,12 +1,63 @@
-<form method="post">
-  <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-  <div class="mb-3">
-    <label>Email</label>
-    <input type="email" name="email" class="form-control" required autofocus>
-  </div>
-  <div class="mb-3">
-    <label>Mot de passe</label>
-    <input type="password" name="password" class="form-control" required>
-  </div>
-  <button class="btn btn-primary">Se connecter</button>
-</form>
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion | GSM
+{% endblock %}
+{% block body_class %}login-page
+{% endblock %}
+
+{% block stylesheets %}
+	{{ parent() }}
+	<link rel="stylesheet" href="{{ asset('assets/css/login.css') }}">
+{% endblock %}
+
+{% block body %}
+	<div class="login-wrap">
+		<div class="login-card">
+			<div class="card-body">
+
+				<img src="{{ asset('assets/img/gsm-logo.png') }}" alt="GSM" class="login-logo">
+
+				<h2 class="login-title text-center fw-bold">Connexion</h2>
+
+				{% if error %}
+					<div class="alert alert-danger">
+						{{ error.messageKey|trans(error.messageData, 'security') }}
+					</div>
+				{% endif %}
+
+				{% if app.user %}
+					<div class="alert alert-info">
+						Connecté en tant que
+						<strong>{{ app.user.userIdentifier }}</strong>.
+						<a href="{{ path('app_logout') }}" class="alert-link">Déconnexion</a>
+					</div>
+				{% endif %}
+
+				<form method="post">
+					<input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+					<div class="form-floating mb-3">
+						<input type="email" name="email" id="inputEmail" class="form-control form-control-lg" placeholder="Email" value="{{ last_username }}" required autofocus autocomplete="email">
+						<label for="inputEmail">Email</label>
+					</div>
+
+					<div class="form-floating mb-3">
+						<input type="password" name="password" id="inputPassword" class="form-control form-control-lg" placeholder="Mot de passe" required autocomplete="current-password">
+						<label for="inputPassword">Mot de passe</label>
+					</div>
+
+					<button class="btn btn-primary btn-lg w-100">
+						Se connecter
+					</button>
+
+					<div class="text-center mt-3">
+						<a class="small text-decoration-none" href="{{ path('app_home') }}">
+							Retour à l’accueil
+						</a>
+					</div>
+				</form>
+
+			</div>
+		</div>
+	</div>
+{% endblock %}

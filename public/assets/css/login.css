@@ -1,0 +1,100 @@
+/* ✅ Background global (couvre header + main + footer) */
+body.login-page::before{
+  content:"";
+  position: fixed;
+  inset: 0;
+  background: url("/assets/img/bg.png") no-repeat center;
+  background-size: cover;
+  filter: blur(50px);
+  transform: scale(1.1);
+  z-index: -1;
+}
+
+/* Important : pas de fond blanc dans main sur la page login */
+body.login-page main{
+  background: transparent !important;
+}
+
+/* Optionnel : footer "glass" uniquement sur la page login */
+body.login-page footer{
+  background: rgba(255,255,255,.65) !important;
+  backdrop-filter: blur(8px);
+}
+
+/* Layout */
+/* centre au milieu de l'écran en tenant compte du header/footer */
+.login-wrap{
+  min-height: calc(100vh - 56px); /* footer */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+/* évite que le pt-5 du main décentre trop */
+body.login-page main{
+  padding-top: 72px; /* hauteur navbar */
+  background: transparent !important;
+}
+
+/* Card */
+.login-card{
+  width: 100%;
+  max-width: 520px;
+  background: rgba(186, 186, 196, 0.68);
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+  backdrop-filter: blur(8px);
+}
+.login-card .card-body{ padding: 2rem; }
+
+/* Title underline */
+.login-title{
+  position: relative;
+  padding-bottom: .75rem;
+  margin-bottom: 1.25rem;
+}
+.login-title::after{
+  content:"";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  height: 4px;
+  width: 56px;
+  border-radius: 2px;
+  background: #1451d5;
+}
+
+/* Logo */
+.login-logo{
+  display:block;
+  margin: 0 auto 14px;
+  width: 140px;
+  height: auto;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,.25));
+}
+
+/* input arrondis + focus clean */
+.login-card .form-control{
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.12);
+  box-shadow: none;
+}
+
+.login-card .form-control:focus{
+  border-color: rgba(20,81,213,.55);
+  box-shadow: 0 0 0 .25rem rgba(20,81,213,.18);
+}
+
+/* label floating + spacing */
+.login-card .form-floating > label{
+  opacity: .75;
+}
+
+/* pour éviter que le label se colle trop en haut en lg */
+.login-card .form-floating > .form-control{
+  padding-top: 1.25rem;
+  padding-bottom: 0.75rem;
+}
