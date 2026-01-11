@@ -1,83 +1,62 @@
 {% extends '@EasyAdmin/page/content.html.twig' %}
 
-{% block content_title %}Produits catalogue (Mongo)
+{% block content_title %}Produits catalogue
 {% endblock %}
 
 {% block main %}
 	<div class="content-panel">
 
-		<form method="get" class="row g-2 mb-3">
+		<form method="get" class="row g-2 mb-3 align-items-end">
 			<div class="col-md-4">
-				<input type="text" name="q" value="{{ filters.text }}" class="form-control" placeholder="Rechercher par texte…">
+				<input type="text" name="q" value="{{ filters.text ?? '' }}" class="form-control" placeholder="Rechercher par texte…">
 			</div>
+
 			<div class="col-md-4">
 				<select name="categoryId" class="form-select">
 					<option value="">Toutes les catégories</option>
 					{% for cat in categories %}
-						<option value="{{ cat.id ?? cat._id }}" {{ filters.categoryId == (cat.id ?? cat._id) ? 'selected' }}>
+						{% set cid = cat.id ?? cat._id %}
+						<option value="{{ cid }}" {{ filters.categoryId == cid ? 'selected' }}>
 							{{ cat.name ?? cat.label }}
 						</option>
 					{% endfor %}
 				</select>
 			</div>
+
 			<div class="col-md-4 text-end">
 				<button class="btn btn-primary">
 					<i class="fa fa-search me-1"></i>Filtrer
 				</button>
+
+				<button type="button" id="toggleCards" class="btn btn-outline-dark" data-edit-tpl="{{ path('admin_catalog_products_edit', {id: '___ID___'}) }}">
+					<i class="fa fa-th-large me-1"></i>Vue cartes
+				</button>
+
 				<a href="{{ path('admin_catalog_products_new') }}" class="btn btn-success">
 					<i class="fa fa-plus me-1"></i>Nouveau produit
 				</a>
 			</div>
 		</form>
 
-		<div class="table-responsive">
-			<table class="table table-striped align-middle">
-				<thead>
-					<tr>
-						<th>SKU</th>
-						<th>Libellé</th>
-						<th>Catégorie</th>
-						<th>Prix HT</th>
-						<th>Prix TTC</th>
-						<th>Unité</th>
-						<th></th>
-					</tr>
-				</thead>
-				<tbody>
-					{% for p in products %}
-						{% set price = p.prices.default ?? { ht: 0, ttc: 0 } %}
-						<tr>
-							<td>
-								<code>{{ p.sku }}</code>
-							</td>
-							<td>{{ p.label }}</td>
-							<td>{{ p.categoryId ?: '-' }}</td>
-							<td>{{ price.ht|number_format(2, ',', ' ') }}
-								€</td>
-							<td>{{ price.ttc|number_format(2, ',', ' ') }}
-								€</td>
-							<td>{{ p.unit }}</td>
-							<td class="text-end">
-								<a href="{{ path('admin_catalog_products_edit', {id: p.id}) }}" class="btn btn-sm btn-outline-primary">
-									<i class="fa fa-pen"></i>
-								</a>
-								<form method="post" action="{{ path('admin_catalog_products_delete', {id: p.id}) }}" class="d-inline" onsubmit="return confirm('Supprimer ce produit ?');">
-									<input type="hidden" name="_token" value="{{ csrf_token('delete_product_' ~ p.id) }}">
-									<button class="btn btn-sm btn-outline-danger">
-										<i class="fa fa-trash"></i>
-									</button>
-								</form>
-							</td>
-						</tr>
-					{% else %}
-						<tr>
-							<td colspan="7" class="text-center text-muted">
-								Aucun produit pour le moment.
-							</td>
-						</tr>
-					{% endfor %}
-				</tbody>
-			</table>
+		<div id="viewTable" class="table-responsive">
+			{% include 'admin/catalog/products/_table.html.twig' %}
 		</div>
+
+		<div id="viewCards" class="d-none" data-url="{{ path('admin_catalog_products_cards') }}">
+			<div class="text-center text-muted py-5">Chargement…</div>
+		</div>
+
 	</div>
+
+	{% include 'admin/catalog/products/_modal_details.html.twig' %}
+{% endblock %}
+
+{% block head_stylesheets %}
+	{{ parent() }}
+	<link rel="stylesheet" href="{{ asset('assets/css/cards.css') }}">
+{% endblock %}
+
+{% block body_javascript %}
+	{{ parent() }}
+	<script src="{{ asset('assets/js/cards.js') }}"></script>
 {% endblock %}

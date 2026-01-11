@@ -2,24 +2,24 @@
 
 namespace App\Service\Stock;
 
-use App\Entity\MouvementStock;
 use App\Infrastructure\Mongo\MongoCatalogClient;
 use MongoDB\Collection;
 
 final class StockService
 {
-    public function __construct(
-        private MongoCatalogClient $mongo,
-    ) {}
+    public function __construct(private readonly MongoCatalogClient $mongo) {}
 
     private function stocks(): Collection
     {
         return $this->mongo->stocks();
     }
 
-    /**
-     * Retourne la quantité en stock pour un produit/variante/magasin
-     */
+    public function findByProductId(string $productId): array
+    {
+        $cursor = $this->stocks()->find(['productId' => $productId], ['sort' => ['magasinId' => 1]]);
+        return array_map(fn($d) => $d->getArrayCopy(), iterator_to_array($cursor, false));
+    }
+
     public function getStock(string $productId, ?string $variantId, int $magasinId): int
     {
         $doc = $this->stocks()->findOne([
@@ -31,9 +31,6 @@ final class StockService
         return $doc ? (int) ($doc['quantity'] ?? 0) : 0;
     }
 
-    /**
-     * Fixe la quantité (upsert)
-     */
     public function setStock(string $productId, ?string $variantId, int $magasinId, int $quantity): void
     {
         $this->stocks()->updateOne(
@@ -51,9 +48,6 @@ final class StockService
         );
     }
 
-    /**
-     * Incrémente/décrémente la quantité (delta peut être négatif)
-     */
     public function incrementStock(string $productId, ?string $variantId, int $magasinId, int|float $delta): void
     {
         $this->stocks()->updateOne(

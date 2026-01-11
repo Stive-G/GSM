@@ -1,6 +1,6 @@
 parameters:
-    # Si tu veux déclarer des paramètres globaux, tu peux les mettre ici
     # mongodb_db: '%env(MONGODB_DB)%'
+    public_upload_dir: "%kernel.project_dir%/public/uploads"
 
 services:
     _defaults:
@@ -42,7 +42,6 @@ services:
             $client: '@MongoDB\Client'
             $dbName: "%env(MONGODB_DB)%"
 
-    # ------------------------------------------------------
-    # 5) (Optionnel) Si tu veux override des services spécifiques
-    #    rien d'autre n'est nécessaire pour le moment
-    # ------------------------------------------------------
+    App\Service\Media\ProductImageStorage:
+        arguments:
+            $publicUploadDir: "%public_upload_dir%"

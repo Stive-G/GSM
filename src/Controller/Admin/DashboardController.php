@@ -17,7 +17,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class DashboardController extends AbstractDashboardController
 {
     public function __construct(
-        private MongoCatalogClient $mongo,
+        private readonly MongoCatalogClient $mongo,
     ) {}
 
     #[Route('/admin', name: 'admin')]
@@ -26,20 +26,24 @@ class DashboardController extends AbstractDashboardController
         // Plus d’entité Article SQL
         $countArticles = 0;
 
-        // Stock compté côté Mongo
-        $countStocks   = $this->mongo->stocks()->countDocuments();
+        // Comptages Mongo
+        $countProducts   = $this->mongo->products()->countDocuments();
+        $countCategories = $this->mongo->categories()->countDocuments();
+        $countStocks     = $this->mongo->stocks()->countDocuments();
 
-        // Pour l’instant on ne gère pas encore les alertes de stock bas
+        // Stock bas (optionnel pour plus tard)
         $threshold     = 10;
         $lowStocks     = [];
         $countLowStock = 0;
 
         return $this->render('admin/dashboard.html.twig', [
-            'countArticles' => $countArticles,
-            'countStocks'   => $countStocks,
-            'threshold'     => $threshold,
-            'lowStocks'     => $lowStocks,
-            'countLowStock' => $countLowStock,
+            'countArticles'   => $countArticles,
+            'countProducts'   => $countProducts,
+            'countCategories' => $countCategories,
+            'countStocks'     => $countStocks,
+            'threshold'       => $threshold,
+            'lowStocks'       => $lowStocks,
+            'countLowStock'   => $countLowStock,
         ]);
     }
 
@@ -54,7 +58,9 @@ class DashboardController extends AbstractDashboardController
         // Dashboard
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
 
-        // === PARTIE SQL ===
+        // ================================
+        // PARTIE SQL
+        // ================================
         yield MenuItem::section('Gestion SQL');
 
         yield MenuItem::linkToCrud('Utilisateurs', 'fa fa-user', User::class);
@@ -63,8 +69,16 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Lignes de documents', 'fa fa-list', DocumentLigne::class);
         yield MenuItem::linkToCrud('Logs', 'fa fa-stream', ActionLog::class);
 
-        // === PARTIE CATALOGUE MONGO ===
-        yield MenuItem::section('Catalogue (Mongo)');
+        // ================================
+        // PARTIE CATALOGUE (Mongo)
+        // ================================
+        yield MenuItem::section('Catalogue');
+
+        yield MenuItem::linkToRoute(
+            'Catégories',
+            'fa fa-folder',
+            'admin_catalog_categories_index'
+        );
 
         yield MenuItem::linkToRoute(
             'Produits catalogue',
