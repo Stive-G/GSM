@@ -17,6 +17,10 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # PHP config (memory limit, etc.)
 COPY docker/php/conf.d/*.ini /usr/local/etc/php/conf.d/
+COPY docker/php/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["php-fpm"]
 
 WORKDIR /var/www/html
 

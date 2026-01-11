@@ -1,0 +1,65 @@
+<div class="table-responsive">
+	<table class="table table-striped align-middle">
+		<thead>
+			<tr>
+				<th>SKU</th>
+				<th>Libellé</th>
+				<th>Catégorie</th>
+				<th>Prix HT</th>
+				<th>Prix TTC</th>
+				<th>Unité</th>
+				<th></th>
+			</tr>
+		</thead>
+
+		<tbody>
+			{% for p in products %}
+				{% set pid = p.id ?? p._id ?? p['_id'] ?? null %}
+				{% set cid = p.categoryId ?? null %}
+				{% set cname = (cid and categoryMap is defined) ? (categoryMap[cid]|default(null)) : null %}
+
+				<tr class="product-row" data-product='{{ { id: pid, sku: p.sku ?? "", label: p.label ?? "", categoryId: cid, categoryName: cname, unit: p.unit ?? null, price_ht: p.price_ht ?? 0, price_ttc: p.price_ttc ?? 0, description: p.description ?? null, attributes: p.attributes ?? {}, images: p.images ?? [] }|json_encode|e("html_attr") }}'>
+
+					<td>
+						<code>{{ p.sku ?? '-' }}</code>
+					</td>
+					<td>{{ p.label ?? '-' }}</td>
+
+					<td>
+						{{ cname ?? '-' }}
+					</td>
+
+					<td>{{ (p.price_ht ?? 0)|number_format(2, ',', ' ') }}
+						€</td>
+					<td>{{ (p.price_ttc ?? 0)|number_format(2, ',', ' ') }}
+						€</td>
+					<td>{{ p.unit ?? '-' }}</td>
+
+					<td class="text-end">
+						<button type="button" class="btn btn-sm btn-outline-secondary btn-details">
+							<i class="fa fa-eye"></i>
+						</button>
+
+						{% if pid %}
+							<a href="{{ path('admin_catalog_products_edit', {id: pid}) }}" class="btn btn-sm btn-outline-primary">
+								<i class="fa fa-pen"></i>
+							</a>
+
+							<form method="post" action="{{ path('admin_catalog_products_delete', {id: pid}) }}" class="d-inline" onsubmit="return confirm('Supprimer ce produit ?');">
+								<input type="hidden" name="_token" value="{{ csrf_token('delete_product_' ~ pid) }}">
+								<button class="btn btn-sm btn-outline-danger">
+									<i class="fa fa-trash"></i>
+								</button>
+							</form>
+						{% endif %}
+					</td>
+
+				</tr>
+			{% else %}
+				<tr>
+					<td colspan="7" class="text-center text-muted">Aucun produit.</td>
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+</div>

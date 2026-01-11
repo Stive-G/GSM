@@ -1,0 +1,21 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+{% block content_title %}Nouvelle catégorie
+{% endblock %}
+
+{% block main %}
+	<div class="content-panel">
+		<form method="post">
+			<div class="mb-3">
+				<label class="form-label">Nom</label>
+				<input type="text" name="name" class="form-control" required>
+			</div>
+
+			<button class="btn btn-primary">
+				<i class="fa fa-save me-1"></i>Créer
+			</button>
+			<a href="{{ path('admin_catalog_categories_index') }}" class="btn btn-secondary">
+				Annuler
+			</a>
+		</form>
+	</div>
+{% endblock %}

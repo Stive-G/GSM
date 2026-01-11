@@ -11,20 +11,20 @@ use Symfony\Component\HttpFoundation\Response;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminRoute;
 
 #[AdminRoute('/catalog/stocks', name: 'catalog_stocks')]
-class StockAdminController extends AbstractController
+final class StockAdminController extends AbstractController
 {
     public function __construct(
-        private MongoCatalogClient $mongo,
-        private ProductCatalogService $products,
+        private readonly MongoCatalogClient $mongo,
+        private readonly ProductCatalogService $products,
     ) {}
 
     #[AdminRoute('/', name: 'index')]
     public function index(Request $request): Response
     {
-        $filterProduct = $request->query->get('productId');
+        $filterProduct = trim((string) $request->query->get('productId', ''));
 
         $query = [];
-        if ($filterProduct) {
+        if ($filterProduct !== '') {
             $query['productId'] = $filterProduct;
         }
 
@@ -36,14 +36,13 @@ class StockAdminController extends AbstractController
 
         $stocks = [];
         foreach ($rawStocks as $doc) {
-            $arr = $doc instanceof \MongoDB\Model\BSONDocument
-                ? $doc->getArrayCopy()
-                : (array) $doc;
+            $arr = $doc instanceof \MongoDB\Model\BSONDocument ? $doc->getArrayCopy() : (array) $doc;
 
-            $id        = (string) $arr['_id'];
+            $id        = (string) ($arr['_id'] ?? '');
             $productId = (string) ($arr['productId'] ?? '');
             $quantity  = (float)  ($arr['quantity'] ?? 0);
 
+            // label produit (optionnel)
             $productLabel = $productId;
             if ($productId !== '') {
                 try {
@@ -52,7 +51,6 @@ class StockAdminController extends AbstractController
                         $productLabel = $prod['label'] ?? $productId;
                     }
                 } catch (\Throwable $e) {
-                    // ignore
                 }
             }
 
@@ -75,34 +73,41 @@ class StockAdminController extends AbstractController
     #[AdminRoute('/new', name: 'new')]
     public function new(Request $request): Response
     {
-        $rawProducts = $this->products->search([], 1, 100);
+        // ProductCatalogService->search retourne un tableau avec items
+        $result = $this->products->search([], 1, 100);
+        $rawProducts = $result['items'] ?? [];
+
         $products = [];
         foreach ($rawProducts as $doc) {
-            $arr = $doc instanceof \MongoDB\Model\BSONDocument
-                ? $doc->getArrayCopy()
-                : (array) $doc;
+            $arr = $doc instanceof \MongoDB\Model\BSONDocument ? $doc->getArrayCopy() : (array) $doc;
 
             $products[] = [
-                'id'    => (string) $arr['_id'],
-                'label' => $arr['label'] ?? (string) $arr['_id'],
+                'id'    => (string) ($arr['_id'] ?? ''),
+                'label' => $arr['label'] ?? (string) ($arr['_id'] ?? ''),
                 'sku'   => $arr['sku'] ?? null,
             ];
         }
 
         if ($request->isMethod('POST')) {
-            $productId = (string) $request->request->get('productId');
-            $quantity  = (float)  $request->request->get('quantity');
+            $productId = trim((string) $request->request->get('productId', ''));
+            $quantity  = (float) $request->request->get('quantity', 0);
 
             if ($productId === '') {
                 $this->addFlash('danger', 'Le produit est obligatoire.');
             } else {
+                // 1 stock par produit => upsert sur productId
                 $this->mongo->stocks()->updateOne(
                     ['productId' => $productId],
-                    ['$set' => ['productId' => $productId, 'quantity' => $quantity]],
+                    [
+                        '$set' => [
+                            'productId' => $productId,
+                            'quantity'  => $quantity,
+                        ],
+                    ],
                     ['upsert' => true]
                 );
 
-                $this->addFlash('success', 'Ligne de stock créée / mise à jour.');
+                $this->addFlash('success', 'Stock créé / mis à jour.');
                 return $this->redirectToRoute('admin_catalog_stocks_index');
             }
         }
@@ -115,14 +120,19 @@ class StockAdminController extends AbstractController
     #[AdminRoute('/{id}/edit', name: 'edit')]
     public function edit(string $id, Request $request): Response
     {
-        $doc = $this->mongo->stocks()->findOne(['_id' => new ObjectId($id)]);
+        // sécurise l'ObjectId
+        try {
+            $oid = new ObjectId($id);
+        } catch (\Throwable) {
+            throw $this->createNotFoundException('ID invalide');
+        }
+
+        $doc = $this->mongo->stocks()->findOne(['_id' => $oid]);
         if (!$doc) {
             throw $this->createNotFoundException('Ligne de stock introuvable');
         }
 
-        $arr = $doc instanceof \MongoDB\Model\BSONDocument
-            ? $doc->getArrayCopy()
-            : (array) $doc;
+        $arr = $doc instanceof \MongoDB\Model\BSONDocument ? $doc->getArrayCopy() : (array) $doc;
 
         $productId = (string) ($arr['productId'] ?? '');
         $quantity  = (float)  ($arr['quantity'] ?? 0);
@@ -139,10 +149,10 @@ class StockAdminController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
-            $quantity = (float) $request->request->get('quantity');
+            $quantity = (float) $request->request->get('quantity', 0);
 
             $this->mongo->stocks()->updateOne(
-                ['_id' => new ObjectId($id)],
+                ['_id' => $oid],
                 ['$set' => ['quantity' => $quantity]]
             );
 
@@ -162,8 +172,13 @@ class StockAdminController extends AbstractController
     public function delete(string $id, Request $request): Response
     {
         if ($this->isCsrfTokenValid('delete_stock_' . $id, (string) $request->request->get('_token'))) {
-            $this->mongo->stocks()->deleteOne(['_id' => new ObjectId($id)]);
-            $this->addFlash('success', 'Ligne de stock supprimée.');
+            try {
+                $oid = new ObjectId($id);
+                $this->mongo->stocks()->deleteOne(['_id' => $oid]);
+                $this->addFlash('success', 'Ligne de stock supprimée.');
+            } catch (\Throwable) {
+                $this->addFlash('danger', 'ID invalide.');
+            }
         }
 
         return $this->redirectToRoute('admin_catalog_stocks_index');

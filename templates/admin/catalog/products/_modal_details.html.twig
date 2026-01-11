@@ -1,0 +1,81 @@
+<div class="modal fade" id="productDetailsModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-lg modal-dialog-scrollable">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="productDetailsTitle">Détails produit</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+			</div>
+
+			<div class="modal-body">
+				<div class="row g-3">
+					<div class="col-md-5">
+						<img id="productDetailsImg" src="" alt="" class="img-fluid rounded border d-none">
+						<div id="productDetailsNoImg" class="text-muted border rounded p-4 text-center d-none">
+							Aucune image
+						</div>
+					</div>
+
+					<div class="col-md-7">
+						<div class="mb-2">
+							<div class="text-muted small">SKU</div>
+							<div>
+								<code id="productDetailsSku"></code>
+							</div>
+						</div>
+
+						<div class="mb-2">
+							<div class="text-muted small">Catégorie</div>
+							<div id="productDetailsCategory">-</div>
+						</div>
+
+						<div class="mb-2 d-flex gap-2 flex-wrap">
+							<span class="badge bg-light text-dark border">
+								HT
+								<span id="productDetailsHt">0</span>
+								€
+							</span>
+							<span class="badge bg-light text-dark border">
+								TTC
+								<span id="productDetailsTtc">0</span>
+								€
+							</span>
+							<span class="badge bg-light text-dark border">
+								Unité
+								<span id="productDetailsUnit">-</span>
+							</span>
+						</div>
+
+						<hr>
+
+						<div class="mb-3">
+							<div class="text-muted small">Description</div>
+							<div id="productDetailsDesc" class="small">-</div>
+						</div>
+
+						<div>
+							<div class="text-muted small">Caractéristiques</div>
+							<div id="productDetailsAttrs" class="small"></div>
+						</div>
+					</div>
+				</div>
+
+				<hr>
+
+				<div>
+					<div class="text-muted small mb-2">Toutes les images</div>
+					<div id="productDetailsGallery" class="d-flex gap-2 flex-wrap"></div>
+				</div>
+			</div>
+
+			<div class="modal-footer justify-content-between">
+				<a id="productDetailsEditBtn" href="#" class="btn btn-outline-primary">
+					<i class="fa fa-pen me-1"></i>Éditer
+				</a>
+
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+					Fermer
+				</button>
+			</div>
+		</div>
+	</div>
+</div>

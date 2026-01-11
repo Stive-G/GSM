@@ -1,0 +1,46 @@
+/* carte propre */
+.product-card{
+  overflow:hidden;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(0,0,0,.25);
+}
+
+/* zone image fixe => empêche l'image de prendre tout l'écran */
+.product-thumb{
+  width:100%;
+  height:180px;            /* ajuste: 160 / 180 / 220 */
+  overflow:hidden;
+  background: rgba(255,255,255,.03);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* image contrainte à la zone */
+.product-thumb .product-img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit: cover;       /* cover = rempli + crop */
+  object-position:center;
+}
+
+/* si tu veux voir l'image entière (pas crop), remplace cover par contain */
+/*
+.product-thumb .product-img{
+  object-fit: contain;
+  padding: 10px;
+}
+*/
+
+.product-thumb .no-img{
+  color: rgba(255,255,255,.55);
+  font-size: .9rem;
+}
+
+/* mini polish footer */
+.product-card .card-footer{
+  background: rgba(0,0,0,.15);
+  border-top: 1px solid rgba(255,255,255,.08);
+}

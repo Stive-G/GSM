@@ -2,86 +2,101 @@
 
 namespace App\Controller\Admin\Catalog;
 
-use App\Repository\Catalog\CatalogCategoryRepository;
+use App\Service\Catalog\CategoryCatalogService;
 use App\Service\Catalog\ProductCatalogService;
-use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminRoute;
-use MongoDB\BSON\UTCDateTime;
+use App\Service\Media\ProductImageStorage;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminRoute;
 
 #[AdminRoute('/catalog/products', name: 'catalog_products')]
-class ProductAdminController extends AbstractController
+final class ProductAdminController extends AbstractController
 {
     public function __construct(
-        private ProductCatalogService $catalog,
-        private CatalogCategoryRepository $categories
+        private readonly ProductCatalogService $products,
+        private readonly CategoryCatalogService $categories,
+        private readonly ProductImageStorage $images,
     ) {}
 
     #[AdminRoute('/', name: 'index')]
     public function index(Request $request): Response
     {
-        $page = max(1, (int) $request->query->get('page', 1));
         $filters = [
             'text'       => $request->query->get('q'),
             'categoryId' => $request->query->get('categoryId'),
         ];
 
-        // Résultats bruts
-        $raw = $this->catalog->search($filters, $page, 50);
+        $result = $this->products->search($filters, 1, 200);
 
-        // Normalisation pour Twig
-        $products = [];
-        foreach ($raw as $doc) {
-            $arr = $doc instanceof \MongoDB\Model\BSONDocument ? $doc->getArrayCopy() : (array) $doc;
-            $arr['id'] = (string) $arr['_id'];
-            $products[] = $arr;
+        $cats = $this->categories->findAll();
+        $categoryMap = [];
+        foreach ($cats as $c) {
+            $cid = (string)($c['id'] ?? $c['_id'] ?? '');
+            $categoryMap[$cid] = (string)($c['name'] ?? $c['label'] ?? $cid);
         }
 
-        $categories = $this->categories->findAllActive();
-
         return $this->render('admin/catalog/products/index.html.twig', [
-            'products'   => $products,
-            'filters'    => $filters,
-            'page'       => $page,
-            'categories' => $categories,
+            'products'     => $result['items'] ?? $result,
+            'categories'   => $cats,
+            'categoryMap'  => $categoryMap,
+            'filters'      => $filters,
         ]);
     }
 
     #[AdminRoute('/new', name: 'new')]
     public function new(Request $request): Response
     {
-        $categories = $this->categories->findAllActive();
+        $categories = $this->categories->findAll();
 
         if ($request->isMethod('POST')) {
-            $attributes = $this->buildAttributesFromRequest($request);
+            $sku   = trim((string) $request->request->get('sku'));
+            $label = trim((string) $request->request->get('label'));
 
-            $details = [
-                'description' => $request->request->get('description'),
-            ];
+            if ($sku === '' || $label === '') {
+                $this->addFlash('danger', 'SKU et Libellé sont obligatoires.');
+                return $this->render('admin/catalog/products/new.html.twig', [
+                    'categories' => $categories,
+                ]);
+            }
+
+            if ($this->products->findBySku($sku)) {
+                $this->addFlash('danger', 'Ce SKU existe déjà.');
+                return $this->render('admin/catalog/products/new.html.twig', [
+                    'categories' => $categories,
+                ]);
+            }
+
+            /** @var \Symfony\Component\HttpFoundation\File\UploadedFile[] $uploaded */
+            $uploaded = $request->files->get('images', []);
+            $imagePaths = $this->images->storeProductImages($sku, $uploaded);
+
+            $attributes = $this->buildAttributes(
+                $request->request->all('attribute_keys'),
+                $request->request->all('attribute_values')
+            );
+
+            $now = new \MongoDB\BSON\UTCDateTime();
 
             $data = [
-                'sku'        => $request->request->get('sku'),
-                'label'      => $request->request->get('label'),
-                'categoryId' => $request->request->get('categoryId') ?: null,
-                'unit'       => $request->request->get('unit'),
-                'prices'     => [
-                    'default' => [
-                        'ht'  => (float) $request->request->get('price_ht'),
-                        'ttc' => (float) $request->request->get('price_ttc'),
-                    ],
-                ],
-                'details'    => $details,
-                'attributes' => $attributes,
-                'images'     => array_filter(array_map('trim', explode("\n", (string) $request->request->get('images')))),
-                'createdAt'  => new UTCDateTime(),
-                'updatedAt'  => new UTCDateTime(),
+                'sku'         => $sku,
+                'label'       => $label,
+                'slug'        => $this->slugify($label),
+                'categoryId'  => $request->request->get('categoryId') ?: null,
+                'unit'        => $request->request->get('unit') ?: null,
+                'price_ht'    => (float)($request->request->get('price_ht') ?? 0),
+                'price_ttc'   => (float)($request->request->get('price_ttc') ?? 0),
+                'description' => $request->request->get('description') ?: null,
+                'attributes'  => $attributes,
+                'images'      => $imagePaths,
+                'createdAt'   => $now,
+                'updatedAt'   => $now,
             ];
 
-            $id = $this->catalog->create($data);
-            $this->addFlash('success', 'Produit créé (' . $id . ').');
+            $this->products->create($data);
 
-            return $this->redirectToRoute('admin_catalog_products_index');
+            $this->addFlash('success', 'Produit créé.');
+            return $this->redirectToRoute('admin_admin_catalog_products_index');
         }
 
         return $this->render('admin/catalog/products/new.html.twig', [
@@ -89,57 +104,99 @@ class ProductAdminController extends AbstractController
         ]);
     }
 
+    #[AdminRoute('/cards', name: 'cards')]
+    public function cards(Request $request): Response
+    {
+        $filters = [
+            'text'       => $request->query->get('q'),
+            'categoryId' => $request->query->get('categoryId'),
+        ];
+
+        $result = $this->products->search($filters, 1, 100);
+
+        // ✅ mapping categoryId -> label (pour afficher le nom dans les cards/modal)
+        $cats = $this->categories->findAll();
+        $categoryMap = [];
+        foreach ($cats as $c) {
+            $cid = (string)($c['id'] ?? $c['_id'] ?? '');
+            $categoryMap[$cid] = (string)($c['name'] ?? $c['label'] ?? $cid);
+        }
+
+        return $this->render('admin/catalog/products/_cards.html.twig', [
+            'products'    => $result['items'] ?? [],
+            'categoryMap' => $categoryMap,
+        ]);
+    }
+
     #[AdminRoute('/{id}/edit', name: 'edit')]
     public function edit(string $id, Request $request): Response
     {
-        $product = $this->catalog->findById($id);
+        $product = $this->products->findById($id);
         if (!$product) {
-            throw $this->createNotFoundException('Produit introuvable');
+            throw $this->createNotFoundException();
         }
-        $product['id'] = (string) $product['_id'];
 
-        $categories = $this->categories->findAllActive();
+        $categories = $this->categories->findAll();
 
         if ($request->isMethod('POST')) {
-            $product['sku']        = $request->request->get('sku');
-            $product['label']      = $request->request->get('label');
-            $product['categoryId'] = $request->request->get('categoryId') ?: null;
-            $product['unit']       = $request->request->get('unit');
+            $sku   = trim((string) $request->request->get('sku'));
+            $label = trim((string) $request->request->get('label'));
 
-            $product['prices']['default']['ht']  = (float) $request->request->get('price_ht');
-            $product['prices']['default']['ttc'] = (float) $request->request->get('price_ttc');
+            if ($sku === '' || $label === '') {
+                $this->addFlash('danger', 'SKU et Libellé sont obligatoires.');
+                return $this->render('admin/catalog/products/edit.html.twig', [
+                    'product'      => $product,
+                    'categories'   => $categories,
+                    'attributes'   => $product['attributes'] ?? [],
+                    'description'  => $product['description'] ?? '',
+                    'images_text'  => implode("\n", (array)($product['images'] ?? [])),
+                    'price_ht'     => (float)($product['price_ht'] ?? 0),
+                    'price_ttc'    => (float)($product['price_ttc'] ?? 0),
+                ]);
+            }
 
-            $product['details']['description'] = $request->request->get('description');
+            $existing = (array)($product['images'] ?? []);
 
-            // ⬇️ ICI : nouvelles caractéristiques
-            $product['attributes'] = $this->buildAttributesFromRequest($request);
+            /** @var \Symfony\Component\HttpFoundation\File\UploadedFile[] $uploaded */
+            $uploaded = $request->files->get('images', []);
+            $newPaths = $this->images->storeProductImages($sku, $uploaded);
 
-            $product['images'] = array_filter(array_map('trim', explode("\n", (string) $request->request->get('images'))));
+            $manualText = (string) $request->request->get('images', '');
+            $manual = array_values(array_filter(array_map('trim', preg_split('/\R/', $manualText) ?: [])));
 
-            $product['updatedAt'] = new UTCDateTime();
+            $attributes = $this->buildAttributes(
+                $request->request->all('attribute_keys'),
+                $request->request->all('attribute_values')
+            );
 
-            $this->catalog->update($id, $product);
+            $update = [
+                'sku'         => $sku,
+                'label'       => $label,
+                'slug'        => $this->slugify($label),
+                'categoryId'  => $request->request->get('categoryId') ?: null,
+                'unit'        => $request->request->get('unit') ?: null,
+                'price_ht'    => (float)($request->request->get('price_ht') ?? 0),
+                'price_ttc'   => (float)($request->request->get('price_ttc') ?? 0),
+                'description' => $request->request->get('description') ?: null,
+                'attributes'  => $attributes,
+                'images'      => array_values(array_unique(array_merge($existing, $newPaths, $manual))),
+                'updatedAt'   => new \MongoDB\BSON\UTCDateTime(),
+            ];
+
+            $this->products->update($id, $update);
+
             $this->addFlash('success', 'Produit mis à jour.');
-
-            return $this->redirectToRoute('admin_catalog_products_index');
+            return $this->redirectToRoute('admin_admin_catalog_products_index');
         }
 
-        // Préparation des champs pour le formulaire
-        $priceHt       = $product['prices']['default']['ht']  ?? 0;
-        $priceTtc      = $product['prices']['default']['ttc'] ?? 0;
-        $description   = $product['details']['description'] ?? '';
-        $attributes    = $product['attributes'] ?? [];
-        $imagesText    = isset($product['images']) ? implode("\n", (array) $product['images']) : '';
-
         return $this->render('admin/catalog/products/edit.html.twig', [
-            'product'     => $product,
-            'id'          => $id,
-            'categories'  => $categories,
-            'price_ht'    => $priceHt,
-            'price_ttc'   => $priceTtc,
-            'description' => $description,
-            'attributes'  => $attributes,
-            'images_text' => $imagesText,
+            'product'      => $product,
+            'categories'   => $categories,
+            'attributes'   => $product['attributes'] ?? [],
+            'description'  => $product['description'] ?? '',
+            'images_text'  => implode("\n", (array)($product['images'] ?? [])),
+            'price_ht'     => (float)($product['price_ht'] ?? 0),
+            'price_ttc'    => (float)($product['price_ttc'] ?? 0),
         ]);
     }
 
@@ -147,41 +204,34 @@ class ProductAdminController extends AbstractController
     public function delete(string $id, Request $request): Response
     {
         if ($this->isCsrfTokenValid('delete_product_' . $id, (string) $request->request->get('_token'))) {
-            $this->catalog->delete($id);
+            $this->products->delete($id);
             $this->addFlash('success', 'Produit supprimé.');
         }
 
-        return $this->redirectToRoute('admin_catalog_products_index');
+        return $this->redirectToRoute('admin_admin_catalog_products_index');
     }
 
-    private function buildAttributesFromRequest(Request $request): array
+    private function buildAttributes(array $keys, array $vals): array
     {
-        $keys   = (array) $request->request->all('attribute_keys');
-        $values = (array) $request->request->all('attribute_values');
-
         $attributes = [];
+        $count = max(count($keys), count($vals));
 
-        foreach ($keys as $i => $key) {
-            $key = trim((string) $key);
-            if ($key === '') {
-                continue;
+        for ($i = 0; $i < $count; $i++) {
+            $k = trim((string)($keys[$i] ?? ''));
+            $v = trim((string)($vals[$i] ?? ''));
+            if ($k !== '' && $v !== '') {
+                $attributes[$k] = $v;
             }
-
-            $value = $values[$i] ?? null;
-            if ($value === null || $value === '') {
-                continue;
-            }
-
-            $value = trim((string) $value);
-
-            // Si c'est numérique, on cast (int/float) pour avoir des vrais nombres en Mongo
-            if (is_numeric($value)) {
-                $value = $value + 0;
-            }
-
-            $attributes[$key] = $value;
         }
 
         return $attributes;
+    }
+
+    private function slugify(string $s): string
+    {
+        $s = mb_strtolower(trim($s));
+        $s = preg_replace('~[^\pL\d]+~u', '-', $s);
+        $s = trim($s, '-');
+        return $s ?: 'produit';
     }
 }
