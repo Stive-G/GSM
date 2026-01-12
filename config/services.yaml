@@ -1,6 +1,8 @@
 parameters:
     # mongodb_db: '%env(MONGODB_DB)%'
     public_upload_dir: "%kernel.project_dir%/public/uploads"
+    mongo_db_name: "gsm"
+    mongo_products_collection: "products"
 
 services:
     _defaults:
@@ -45,3 +47,8 @@ services:
     App\Service\Media\ProductImageStorage:
         arguments:
             $publicUploadDir: "%public_upload_dir%"
+
+    App\Service\ProductRefSyncService:
+        arguments:
+            $mongoDbName: "%mongo_db_name%"
+            $mongoCollection: "%mongo_products_collection%"

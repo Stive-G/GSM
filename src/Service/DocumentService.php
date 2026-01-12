@@ -3,27 +3,34 @@
 namespace App\Service;
 
 use App\Entity\Document;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\DocumentRepository;
 
 class DocumentService
 {
-    public function __construct(
-        private EntityManagerInterface $em,
-    ) {}
+    public function __construct(private DocumentRepository $docRepo) {}
 
-    /**
-     * Pour l’instant : pas d’impact stock automatique.
-     * On laisse la création de mouvements se faire via MouvementStockCrudController.
-     */
-    public function processDocument(Document $doc): void
+    public function prepareDocument(Document $doc): void
     {
-        // TODO plus tard : générer des MouvementStock à partir des lignes
-        // en utilisant productIdMongo / productLabel / unit / quantity.
+        if (!$doc->getNumero() || trim((string) $doc->getNumero()) === '') {
+            $doc->setNumero($this->generateNumero($doc));
+        }
+
+        // snapshot: pour chaque ligne, copie ProductRef -> champs SQL
+        foreach ($doc->getLignes() as $ligne) {
+            $ligne->hydrateFromProductRef();
+        }
     }
 
-    public function reprocessDocument(Document $doc): void
+    private function generateNumero(Document $doc): string
     {
-        // Stratégie actuelle : on interdit l’édition d’une vente si tu décides plus tard.
-        // Tu peux aussi laisser vide pour ne rien bloquer.
+        $prefix = $doc->getType() === Document::TYPE_VENTE ? 'VEN' : 'DEV';
+        $day = new \DateTimeImmutable();
+        $date = $day->format('Ymd');
+
+        $next = $this->docRepo->countByTypeAndDay($doc->getType(), $day) + 1;
+        return sprintf('%s-%s-%04d', $prefix, $date, $next);
     }
+
+    public function processDocument(Document $doc): void {}
+    public function reprocessDocument(Document $doc): void {}
 }

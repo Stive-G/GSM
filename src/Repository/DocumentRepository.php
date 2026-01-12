@@ -6,9 +6,6 @@ use App\Entity\Document;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<Document>
- */
 class DocumentRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -16,17 +13,19 @@ class DocumentRepository extends ServiceEntityRepository
         parent::__construct($registry, Document::class);
     }
 
-    /**
-     * Retourne les documents d’un type donné
-     * Exemple : "devis", "bon_livraison", "facture", "vente", etc.
-     */
-    public function findByType(string $type): array
+    public function countByTypeAndDay(string $type, \DateTimeImmutable $day): int
     {
-        return $this->createQueryBuilder('d')
-            ->andWhere('d.type = :t')
-            ->setParameter('t', $type)
-            ->orderBy('d.createdAt', 'DESC')
+        $start = $day->setTime(0, 0, 0);
+        $end   = $day->setTime(23, 59, 59);
+
+        return (int) $this->createQueryBuilder('d')
+            ->select('COUNT(d.id)')
+            ->andWhere('d.type = :type')
+            ->andWhere('d.createdAt BETWEEN :start AND :end')
+            ->setParameter('type', $type)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
             ->getQuery()
-            ->getResult();
+            ->getSingleScalarResult();
     }
 }

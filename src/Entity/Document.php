@@ -22,7 +22,7 @@ class Document
     private string $type = self::TYPE_DEVIS;
 
     #[ORM\Column(length: 50)]
-    private string $numero;
+    private ?string $numero = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
@@ -31,15 +31,17 @@ class Document
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
-    /**
-     * @var Collection<int, DocumentLigne>
-     */
-    #[ORM\OneToMany(mappedBy: 'document', targetEntity: DocumentLigne::class, cascade: ['persist'], orphanRemoval: true)]
+    #[ORM\OneToMany(
+        mappedBy: 'document',
+        targetEntity: DocumentLigne::class,
+        cascade: ['persist'],
+        orphanRemoval: true
+    )]
     private Collection $lignes;
 
     public function __construct()
     {
-        $this->lignes    = new ArrayCollection();
+        $this->lignes = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -58,10 +60,11 @@ class Document
         return $this;
     }
 
-    public function getNumero(): string
+    public function getNumero(): ?string
     {
         return $this->numero;
     }
+
     public function setNumero(string $numero): self
     {
         $this->numero = $numero;
@@ -82,15 +85,8 @@ class Document
     {
         return $this->createdAt;
     }
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-        return $this;
-    }
 
-    /**
-     * @return Collection<int, DocumentLigne>
-     */
+    /** @return Collection<int, DocumentLigne> */
     public function getLignes(): Collection
     {
         return $this->lignes;
@@ -99,7 +95,7 @@ class Document
     public function addLigne(DocumentLigne $ligne): self
     {
         if (!$this->lignes->contains($ligne)) {
-            $this->lignes[] = $ligne;
+            $this->lignes->add($ligne);
             $ligne->setDocument($this);
         }
         return $this;
