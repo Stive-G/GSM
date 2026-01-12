@@ -6,6 +6,8 @@ use App\Entity\Document;
 use App\Form\DocumentLigneType;
 use App\Service\DocumentService;
 use Doctrine\ORM\EntityManagerInterface;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
@@ -30,6 +32,20 @@ class DocumentCrudController extends AbstractCrudController
             ->setEntityLabelInSingular('Document');
     }
 
+    public function configureActions(Actions $actions): Actions
+    {
+        $pdf = Action::new('pdf', 'PDF')
+            ->setIcon('fa fa-file-pdf')
+            ->linkToUrl(fn(Document $doc) => $this->generateUrl('admin_document_pdf', [
+                'id' => $doc->getId(),
+            ]))
+            ->setHtmlAttributes(['target' => '_blank']);
+
+        return $actions
+            ->add(Crud::PAGE_INDEX, $pdf)
+            ->add(Crud::PAGE_DETAIL, $pdf);
+    }
+
     public function configureFields(string $pageName): iterable
     {
         yield ChoiceField::new('type')->setChoices([
@@ -38,7 +54,9 @@ class DocumentCrudController extends AbstractCrudController
         ]);
 
         yield AssociationField::new('client');
-        yield DateTimeField::new('createdAt')->onlyOnIndex();
+        yield DateTimeField::new('createdAt', 'Créé le')
+            ->onlyOnIndex()
+            ->setFormat('dd/MM/yyyy HH:mm');
 
         yield CollectionField::new('lignes', 'Lignes')
             ->setEntryType(DocumentLigneType::class)

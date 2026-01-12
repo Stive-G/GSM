@@ -10,6 +10,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 
 class DocumentLigneCrudController extends AbstractCrudController
 {
@@ -21,6 +22,21 @@ class DocumentLigneCrudController extends AbstractCrudController
     public static function getEntityFqcn(): string
     {
         return DocumentLigne::class;
+    }
+
+    public function configureCrud(Crud $crud): Crud
+    {
+        return $crud
+            ->setEntityLabelInSingular('Ligne de document')
+            ->setEntityLabelInPlural('Lignes de documents');
+    }
+
+    public function configureFields(string $pageName): iterable
+    {
+        yield TextField::new('productLabel', 'Produit');
+        yield TextField::new('unit', 'Unité');
+        yield TextField::new('unitPriceHt', 'Prix unitaire HT');
+        yield TextField::new('quantity', 'Quantité');
     }
 
     public function configureActions(Actions $actions): Actions

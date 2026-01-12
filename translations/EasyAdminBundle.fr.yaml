@@ -1,0 +1,23 @@
+# Actions
+action.new: "Ajouter"
+action.edit: "Modifier"
+action.delete: "Supprimer"
+action.detail: "Détails"
+action.save: "Enregistrer"
+action.saveAndReturn: "Enregistrer et revenir"
+action.saveAndContinue: "Enregistrer et continuer"
+action.cancel: "Annuler"
+action.search: "Rechercher"
+
+# Général
+datagrid.no_results: "Aucun résultat"
+paginator.results: "résultat(s)"
+paginator.first: "Premier"
+paginator.previous: "Précédent"
+paginator.next: "Suivant"
+paginator.last: "Dernier"
+
+# Filtres / tri (selon version)
+filter.title: "Filtres"
+filter.button.apply: "Appliquer"
+filter.button.clear: "Effacer"
