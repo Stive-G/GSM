@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controller\Admin;
 
 use App\Entity\Document;
@@ -14,13 +15,17 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 
 class DocumentCrudController extends AbstractCrudController
 {
-    public function __construct(private DocumentService $docService) {}
+    public function __construct(private DocumentService $documentService) {}
 
-    public static function getEntityFqcn(): string { return Document::class; }
+    public static function getEntityFqcn(): string
+    {
+        return Document::class;
+    }
 
     public function configureCrud(Crud $crud): Crud
     {
-        return $crud->setEntityPermission('ROLE_VENDEUR')
+        return $crud
+            ->setEntityPermission('ROLE_VENDEUR')
             ->setEntityLabelInPlural('Documents')
             ->setEntityLabelInSingular('Document');
     }
@@ -28,14 +33,16 @@ class DocumentCrudController extends AbstractCrudController
     public function configureFields(string $pageName): iterable
     {
         yield ChoiceField::new('type')->setChoices([
-            'Devis' => Document::TYPE_DEVIS,
-            'Vente' => Document::TYPE_VENTE,
+            'Devis'  => Document::TYPE_DEVIS,
+            'Vente'  => Document::TYPE_VENTE,
         ]);
+
         yield AssociationField::new('client');
         yield DateTimeField::new('createdAt')->onlyOnIndex();
 
         yield CollectionField::new('lignes', 'Lignes')
             ->setEntryType(DocumentLigneType::class)
+            ->setFormTypeOptions(['by_reference' => false])
             ->allowAdd()
             ->allowDelete()
             ->renderExpanded(true);
@@ -43,13 +50,15 @@ class DocumentCrudController extends AbstractCrudController
 
     public function persistEntity(EntityManagerInterface $em, $entityInstance): void
     {
+        $this->documentService->prepareDocument($entityInstance);
         parent::persistEntity($em, $entityInstance);
-        $this->docService->processDocument($entityInstance); // applique stock si VENTE
+        $this->documentService->processDocument($entityInstance);
     }
 
     public function updateEntity(EntityManagerInterface $em, $entityInstance): void
     {
+        $this->documentService->prepareDocument($entityInstance);
         parent::updateEntity($em, $entityInstance);
-        $this->docService->reprocessDocument($entityInstance); // recalcul simple (re-apply)
+        $this->documentService->reprocessDocument($entityInstance);
     }
 }
