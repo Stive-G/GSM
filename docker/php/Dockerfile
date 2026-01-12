@@ -1,12 +1,13 @@
 FROM php:8.3-fpm
 
 RUN apt-get update && apt-get install -y \
-    git unzip libzip-dev libicu-dev \
+    git unzip \
+    libzip-dev libicu-dev \
+    libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+    && docker-php-ext-configure intl \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) intl pdo_mysql zip opcache gd \
     && rm -rf /var/lib/apt/lists/*
-
-# Extensions utiles Symfony
-RUN docker-php-ext-configure intl \
-    && docker-php-ext-install -j$(nproc) intl pdo_mysql zip opcache
 
 # MongoDB extension
 RUN pecl install mongodb \
@@ -18,7 +19,9 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # PHP config (memory limit, etc.)
 COPY docker/php/conf.d/*.ini /usr/local/etc/php/conf.d/
 COPY docker/php/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh \
+    && sed -i '1s/^\xEF\xBB\xBF//' /entrypoint.sh \
+    && chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["php-fpm"]
 

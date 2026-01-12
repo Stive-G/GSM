@@ -61,7 +61,7 @@ class DashboardController extends AbstractDashboardController
         // ================================
         // PARTIE SQL
         // ================================
-        yield MenuItem::section('Gestion SQL');
+        yield MenuItem::section('Gestion');
 
         yield MenuItem::linkToCrud('Utilisateurs', 'fa fa-user', User::class);
         yield MenuItem::linkToCrud('Clients', 'fa fa-address-book', Client::class);

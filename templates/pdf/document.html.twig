@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="UTF-8">
+		<style>
+			@page {
+				margin: 110px 36px 80px;
+			}
+			body {
+				font-family: DejaVu Sans, sans-serif;
+				font-size: 12px;
+				color: #111;
+			}
+
+			header {
+				position: fixed;
+				top: -90px;
+				left: 0;
+				right: 0;
+				height: 80px;
+				border-bottom: 1px solid #e5e5e5;
+				padding-bottom: 10px;
+			}
+			footer {
+				position: fixed;
+				bottom: -60px;
+				left: 0;
+				right: 0;
+				height: 50px;
+				border-top: 1px solid #e5e5e5;
+				padding-top: 8px;
+				font-size: 10px;
+				color: #666;
+			}
+
+			.h-row {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+			.brand {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+			}
+			.logo {
+				height: 44px;
+			}
+			.company {
+				font-size: 10px;
+				color: #444;
+				line-height: 1.4;
+			}
+
+			.doc-meta {
+				text-align: right;
+				line-height: 1.4;
+			}
+			.doc-title {
+				font-size: 16px;
+				font-weight: 700;
+				margin: 0;
+			}
+			.muted {
+				color: #666;
+			}
+
+			.block {
+				margin-top: 10px;
+				border: 1px solid #eee;
+				border-radius: 6px;
+				padding: 10px;
+			}
+			.two-cols {
+				display: flex;
+				gap: 10px;
+			}
+			.col {
+				flex: 1;
+			}
+
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin-top: 14px;
+			}
+			thead {
+				display: table-header-group;
+			} /* répète l’en-tête */
+			th,
+			td {
+				border: 1px solid #e6e6e6;
+				padding: 8px;
+				vertical-align: top;
+			}
+			th {
+				background: #f6f7f9;
+				font-weight: 700;
+				font-size: 11px;
+				color: #222;
+			}
+
+			.right {
+				text-align: right;
+			}
+			.center {
+				text-align: center;
+			}
+
+			.totals {
+				width: 45%;
+				margin-left: auto;
+				margin-top: 10px;
+				border: 1px solid #eee;
+				border-radius: 6px;
+				padding: 8px 10px;
+			}
+			.totals-row {
+				display: flex;
+				justify-content: space-between;
+				padding: 4px 0;
+			}
+
+			.badge {
+				display: inline-block;
+				padding: 3px 8px;
+				border-radius: 999px;
+				font-size: 10px;
+				background: #eef2ff;
+				color: #1d4ed8;
+				font-weight: 700;
+			}
+		</style>
+	</head>
+	<body>
+
+		<header>
+			<div class="h-row">
+				<div class="brand">
+					<img class="logo" src="{{ logoDataUri }}" alt="GSM">
+					<div class="company">
+						<strong>GSM</strong><br>
+						10 rue Exemple, 75000 Paris<br>
+						contact@gsm.local — 01 02 03 04 05
+					</div>
+				</div>
+
+				<div class="doc-meta">
+					<div class="badge">{{ doc.type == 'VENTE' ? 'VENTE' : 'DEVIS' }}</div><br>
+					<div class="doc-title">{{ doc.type == 'VENTE' ? 'Bon de vente' : 'Devis' }}</div>
+					<div class="muted">N°
+						{{ doc.numero }}</div>
+					<div class="muted">Date :
+						{{ doc.createdAt|date('d/m/Y H:i') }}</div>
+				</div>
+			</div>
+		</header>
+
+		<footer>
+			<div style="display:flex; justify-content:space-between; align-items:center;">
+				<div>GSM — Document généré le
+					{{ "now"|date("d/m/Y H:i") }}</div>
+				<div>Page (voir pagination)</div>
+			</div>
+		</footer>
+
+		<div class="two-cols">
+			<div class="col block">
+				<strong>Client</strong><br>
+				{% if doc.client %}
+					{{ doc.client.name ?? '' }}<br>
+					<span class="muted">{{ doc.client.email ?? '' }}</span><br>
+					<span class="muted">{{ doc.client.phone ?? '' }}</span>
+				{% else %}
+					<span class="muted">Aucun client</span>
+				{% endif %}
+			</div>
+
+			<div class="col block">
+				<strong>Informations</strong><br>
+				<span class="muted">Type :</span>
+				{{ doc.type }}<br>
+				<span class="muted">Référence :</span>
+				{{ doc.numero }}<br>
+				<span class="muted">Créé le :</span>
+				{{ doc.createdAt|date('d/m/Y H:i') }}
+			</div>
+		</div>
+
+		<table>
+			<thead>
+				<tr>
+					<th style="width:42%">Produit</th>
+					<th style="width:10%" class="center">Unité</th>
+					<th style="width:16%" class="right">PU HT</th>
+					<th style="width:12%" class="right">Qté</th>
+					<th style="width:20%" class="right">Total HT</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% set totalHt = 0 %}
+				{% for l in doc.lignes %}
+					{% set lineTotal = (l.unitPriceHt * l.quantity) %}
+					{% set totalHt = totalHt + lineTotal %}
+					<tr>
+						<td>
+							<strong>{{ l.productLabel }}</strong><br>
+						</td>
+						<td class="center">{{ l.unit }}</td>
+						<td class="right">{{ l.unitPriceHt|number_format(2, ',', ' ') }}
+							€</td>
+						<td class="right">{{ l.quantity|number_format(2, ',', ' ') }}</td>
+						<td class="right">
+							<strong>{{ lineTotal|number_format(2, ',', ' ') }}
+								€</strong>
+						</td>
+					</tr>
+				{% else %}
+					<tr>
+						<td colspan="5" class="center muted">Aucune ligne</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+
+		{% set tvaRate = 0.20 %}
+		{% set tva = totalHt * tvaRate %}
+		{% set totalTtc = totalHt + tva %}
+
+		<div class="totals">
+			<div class="totals-row">
+				<div>Total HT</div>
+				<div>{{ totalHt|number_format(2, ',', ' ') }}
+					€</div>
+			</div>
+			<div class="totals-row">
+				<div>TVA (20%)</div>
+				<div>{{ tva|number_format(2, ',', ' ') }}
+					€</div>
+			</div>
+			<div class="totals-row">
+				<div>
+					<strong>Total TTC</strong>
+				</div>
+				<div>
+					<strong>{{ totalTtc|number_format(2, ',', ' ') }}
+						€</strong>
+				</div>
+			</div>
+		</div>
+
+	</body>
+</html>
