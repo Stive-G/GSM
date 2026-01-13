@@ -8,9 +8,11 @@ use Dompdf\Options;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 class DocumentPdfController extends AbstractController
 {
+    #[IsGranted('ROLE_VENDEUR')]
     #[Route('/admin/document/{id}/pdf', name: 'admin_document_pdf', methods: ['GET'])]
     public function pdf(int $id, DocumentRepository $repo): Response
     {

@@ -15,6 +15,8 @@ use MongoDB\BSON\ObjectId;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Service\StockDashboardService;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+
 
 class DashboardController extends AbstractDashboardController
 {
@@ -23,29 +25,32 @@ class DashboardController extends AbstractDashboardController
         private readonly StockDashboardService $stockDash,
     ) {}
 
+    #[IsGranted('ROLE_VENDEUR')]
     #[Route('/admin', name: 'admin')]
     public function index(): Response
     {
-        // Comptages Mongo
-        $countProducts   = $this->mongo->products()->countDocuments();
-        $countCategories = $this->mongo->categories()->countDocuments();
-        $countStocks     = $this->mongo->stocks()->countDocuments();
-
-        // Stock bas
         $threshold = 10;
 
-        $countLowStock = $this->stockDash->countLowStocks($threshold);
-        $lowStocks     = $this->stockDash->findLowStocks($threshold, 30);
+        $data = [
+            'threshold' => $threshold,
+            'countProducts' => null,
+            'countCategories' => null,
+            'countStocks' => null,
+            'lowStocks' => [],
+            'countLowStock' => 0,
+        ];
 
-        return $this->render('admin/dashboard.html.twig', [
-            // remplace articles par produits
-            'countProducts'   => $countProducts,
-            'countCategories' => $countCategories,
-            'countStocks'     => $countStocks,
-            'threshold'       => $threshold,
-            'lowStocks'       => $lowStocks,
-            'countLowStock'   => $countLowStock,
-        ]);
+        // Stocks visibles pour magasinier et +
+        if ($this->isGranted('ROLE_MAGASINIER')) {
+            $data['countProducts']   = $this->mongo->products()->countDocuments();
+            $data['countCategories'] = $this->mongo->categories()->countDocuments();
+            $data['countStocks']     = $this->mongo->stocks()->countDocuments();
+
+            $data['countLowStock'] = $this->stockDash->countLowStocks($threshold);
+            $data['lowStocks']     = $this->stockDash->findLowStocks($threshold, 30);
+        }
+
+        return $this->render('admin/dashboard.html.twig', $data);
     }
 
     public function configureDashboard(): Dashboard
@@ -60,15 +65,31 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
 
         yield MenuItem::section('Gestion');
-        yield MenuItem::linkToCrud('Utilisateurs', 'fa fa-user', User::class);
-        yield MenuItem::linkToCrud('Clients', 'fa fa-address-book', Client::class);
-        yield MenuItem::linkToCrud('Documents', 'fa fa-file-invoice', Document::class);
-        yield MenuItem::linkToCrud('Lignes de documents', 'fa fa-list', DocumentLigne::class);
-        yield MenuItem::linkToCrud('Logs', 'fa fa-stream', ActionLog::class);
+
+        // Users = ADMIN only
+        if ($this->isGranted('ROLE_ADMIN')) {
+            yield MenuItem::linkToCrud('Utilisateurs', 'fa fa-user', User::class);
+            yield MenuItem::linkToCrud('Logs', 'fa fa-stream', ActionLog::class);
+        }
+
+        // Clients = vendeur et +
+        if ($this->isGranted('ROLE_VENDEUR')) {
+            yield MenuItem::linkToCrud('Clients', 'fa fa-address-book', Client::class);
+            yield MenuItem::linkToCrud('Documents', 'fa fa-file-invoice', Document::class);
+            yield MenuItem::linkToCrud('Lignes de documents', 'fa fa-list', DocumentLigne::class);
+        }
 
         yield MenuItem::section('Catalogue');
-        yield MenuItem::linkToRoute('Catégories', 'fa fa-folder', 'admin_catalog_categories_index');
-        yield MenuItem::linkToRoute('Produits catalogue', 'fa fa-boxes', 'admin_catalog_products_index');
-        yield MenuItem::linkToRoute('Stocks', 'fa fa-warehouse', 'admin_catalog_stocks_index');
+
+        // Catalogue = magasinier et +
+        if ($this->isGranted('ROLE_MAGASINIER')) {
+            yield MenuItem::linkToRoute('Stocks', 'fa fa-warehouse', 'admin_catalog_stocks_index');
+        }
+
+        // Produits + catégories = direction et +
+        if ($this->isGranted('ROLE_DIRECTION')) {
+            yield MenuItem::linkToRoute('Catégories', 'fa fa-folder', 'admin_catalog_categories_index');
+            yield MenuItem::linkToRoute('Produits catalogue', 'fa fa-boxes', 'admin_catalog_products_index');
+        }
     }
 }
