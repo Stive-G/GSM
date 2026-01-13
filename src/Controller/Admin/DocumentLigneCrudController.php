@@ -27,6 +27,7 @@ class DocumentLigneCrudController extends AbstractCrudController
     public function configureCrud(Crud $crud): Crud
     {
         return $crud
+            ->setEntityPermission('ROLE_VENDEUR')
             ->setEntityLabelInSingular('Ligne de document')
             ->setEntityLabelInPlural('Lignes de documents');
     }

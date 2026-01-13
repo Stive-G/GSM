@@ -16,8 +16,10 @@
 
 		<div class="col-lg-8 mx-auto">
 			<div class="alert alert-info text-start" role="alert">
-				<div class="d-flex gap-2 align-items-start">
-					<div class="fs-4">🚧</div>
+				<div class="d-flex gap-3 align-items-start">
+					<div class="fs-4 text-info">
+						<i class="fa fa-tools"></i>
+					</div>
 					<div>
 						<strong>En cours de développement</strong>
 						<div class="small opacity-75">
@@ -28,12 +30,18 @@
 			</div>
 
 			<div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-				<a class="btn btn-primary btn-lg px-4" href="{{ path('admin') }}">Accéder au back-office</a>
+				<a class="btn btn-primary btn-lg px-4" href="{{ path('admin') }}">
+					<i class="fa fa-lock me-2"></i>Accéder au back-office
+				</a>
 
 				{% if app.user %}
-					<a class="btn btn-outline-secondary btn-lg px-4" href="{{ path('admin') }}">Continuer</a>
+					<a class="btn btn-outline-secondary btn-lg px-4" href="{{ path('admin') }}">
+						<i class="fa fa-arrow-right me-2"></i>Continuer
+					</a>
 				{% else %}
-					<a class="btn btn-outline-secondary btn-lg px-4" href="{{ path('app_login') }}">Connexion</a>
+					<a class="btn btn-outline-secondary btn-lg px-4" href="{{ path('app_login') }}">
+						<i class="fa fa-sign-in-alt me-2"></i>Connexion
+					</a>
 				{% endif %}
 			</div>
 
@@ -49,20 +57,34 @@
 		<div class="row g-4">
 			<div class="col-md-4">
 				<div class="p-4 border rounded-3 h-100">
-					<h3 class="h5">📦 Catalogue</h3>
-					<p class="mb-0 small text-muted">Produits matériaux avec attributs flexibles (MongoDB).</p>
+					<h3 class="h5">
+						<i class="fa fa-boxes me-2 text-secondary"></i>Catalogue
+					</h3>
+					<p class="mb-0 small text-muted">
+						Produits matériaux avec attributs flexibles (MongoDB).
+					</p>
 				</div>
 			</div>
+
 			<div class="col-md-4">
 				<div class="p-4 border rounded-3 h-100">
-					<h3 class="h5">🧾 Documents</h3>
-					<p class="mb-0 small text-muted">Devis, BL, factures, lignes, TVA, statuts (MySQL).</p>
+					<h3 class="h5">
+						<i class="fa fa-file-invoice me-2 text-secondary"></i>Documents
+					</h3>
+					<p class="mb-0 small text-muted">
+						Devis, BL, factures, lignes, TVA, statuts (MySQL).
+					</p>
 				</div>
 			</div>
+
 			<div class="col-md-4">
 				<div class="p-4 border rounded-3 h-100">
-					<h3 class="h5">🧠 Traçabilité</h3>
-					<p class="mb-0 small text-muted">Journal d’actions, historique, contrôle d’accès par rôles.</p>
+					<h3 class="h5">
+						<i class="fa fa-stream me-2 text-secondary"></i>Traçabilité
+					</h3>
+					<p class="mb-0 small text-muted">
+						Journal d’actions, historique, contrôle d’accès par rôles.
+					</p>
 				</div>
 			</div>
 		</div>

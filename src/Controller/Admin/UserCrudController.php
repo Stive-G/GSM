@@ -10,6 +10,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
 
 final class UserCrudController extends AbstractCrudController
 {
@@ -55,6 +56,7 @@ final class UserCrudController extends AbstractCrudController
 
     public function configureFields(string $pageName): iterable
     {
+        yield IntegerField::new('id', 'ID')->onlyOnIndex();
         // Index : email NON cliquable
         yield TextField::new('email', 'Email')
             ->onlyOnIndex();

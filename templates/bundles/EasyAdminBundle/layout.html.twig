@@ -4,5 +4,16 @@
 	<link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}?v={{ date().timestamp }}">
 	<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}?v={{ date().timestamp }}">
 	<link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}?v={{ date().timestamp }}">
+	<link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}?v={{ date().timestamp }}">
 	<link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}?v={{ date().timestamp }}">
+{% endblock %}
+
+{# Bloc compatible : s'affiche avant le menu sidebar #}
+{% block main_menu_before %}
+	<a href="/" class="d-flex align-items-center text-decoration-none px-3 py-3 border-bottom text-reset">
+		<img src="{{ asset('assets/img/gsm-logo.png') }}" alt="GSM" style="height:28px;width:auto;">
+		<span class="ms-2 fw-semibold">GSM</span>
+	</a>
+
+	{{ parent() }}
 {% endblock %}

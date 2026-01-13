@@ -24,6 +24,7 @@ security:
             lazy: true
             provider: app_user_provider
             custom_authenticator: App\Security\LoginFormAuthenticator
+            access_denied_handler: App\Security\AccessDeniedHandler
 
             logout:
                 path: app_logout
@@ -39,8 +40,8 @@ security:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/logout, roles: PUBLIC_ACCESS }
 
-        # Gestion des utilisateurs : uniquement ADMIN
-        - { path: ^/admin/users, roles: ROLE_ADMIN }
+        # Gestion des utilisateurs : uniquement ADMIN (user OU users)
+        - { path: ^/admin/(users|user), roles: ROLE_ADMIN }
 
         # Logs : uniquement ADMIN
         - { path: ^/admin/action-log, roles: ROLE_ADMIN }

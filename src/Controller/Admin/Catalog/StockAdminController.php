@@ -9,7 +9,9 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminRoute;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('ROLE_MAGASINIER')]
 #[AdminRoute('/catalog/stocks', name: 'catalog_stocks')]
 final class StockAdminController extends AbstractController
 {
