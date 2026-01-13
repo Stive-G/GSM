@@ -1,8 +1,9 @@
 {% extends '@EasyAdmin/page/content.html.twig' %}
 
+{% block page_title %}Dashboard
+{% endblock %}
 {% block content_title %}Dashboard
 {% endblock %}
-
 
 {% block head_stylesheets %}
 	{{ parent() }}
@@ -18,11 +19,12 @@
 	{# ===================== KPI ===================== #}
 	<div class="kpi container-fluid px-0 mb-4">
 		<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-5 g-3">
+
 			<div class="col">
 				<div class="card h-100 shadow-sm">
 					<div class="card-body text-center">
-						<div class="label">Articles</div>
-						<div class="value">{{ countArticles }}</div>
+						<div class="label">Produits</div>
+						<div class="value">{{ countProducts }}</div>
 					</div>
 				</div>
 			</div>
@@ -45,6 +47,7 @@
 					</div>
 				</div>
 			</div>
+
 		</div>
 	</div>
 
@@ -52,18 +55,21 @@
 	<section class="mt-4">
 		<div class="d-flex align-items-center justify-content-between low-stock-header mb-3">
 			<div class="d-flex align-items-center gap-2">
-				<h5 class="mb-0">Articles en stock bas</h5>
+				<h5 class="mb-0">Produits en stock bas</h5>
+
 				<span class="chip">
 					<i class="fa fa-gauge-high"></i>
 					seuil
 					{{ threshold }}
 				</span>
+
 				<span class="chip">
 					<i class="fa fa-bell"></i>
 					{{ countLowStock }}
 					alerte{{ countLowStock > 1 ? 's' : '' }}
 				</span>
 			</div>
+
 			<div class="d-flex gap-2">
 				<a href="{{ path('admin') }}" class="btn btn-sm btn-outline-light">
 					<i class="fa fa-rotate-right me-1"></i>Rafraîchir
@@ -76,6 +82,7 @@
 
 		{% if countLowStock > 0 %}
 			<div class="row g-3 row-cols-1 row-cols-md-2 row-cols-xl-3 mb-3">
+
 				{% for s in lowStocks %}
 					{% set q = s.quantity + 0 %}
 					{% set p = (q / (threshold ?: 1) * 100) | round(0, 'floor') %}
@@ -92,6 +99,7 @@
 										{{ s.magasin.name }}
 									</div>
 								</div>
+
 								<div class="text-end">
 									<div class="low-qty fw-bold {{ cls == 'crit' ? 'text-danger' : (cls == 'warn' ? 'text-warning' : 'text-success') }}">
 										{{ q }}
@@ -112,13 +120,14 @@
 						</div>
 					</div>
 				{% endfor %}
+
 			</div>
 
 			<div class="table-responsive">
 				<table class="table table-sm table-striped align-middle">
 					<thead class="table-light">
 						<tr>
-							<th>Article</th>
+							<th>Produit</th>
 							<th>Cond.</th>
 							<th>Magasin</th>
 							<th class="text-end">Qté</th>
@@ -145,7 +154,7 @@
 						</div>
 						<h5 class="mb-1">Tout est au vert</h5>
 						<p class="mb-0 muted">
-							Aucun article n’est en dessous du seuil critique pour le moment.
+							Aucun produit n’est en dessous du seuil critique pour le moment.
 						</p>
 					</div>
 				</div>
