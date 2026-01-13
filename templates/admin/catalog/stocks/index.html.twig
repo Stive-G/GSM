@@ -9,7 +9,7 @@
 	<div class="content-panel">
 		<form method="get" class="row g-2 mb-3">
 			<div class="col-md-8">
-				<input type="text" name="productId" value="{{ filters.productId }}" class="form-control" placeholder="Filtrer par ID produit (Mongo)…">
+				<input type="text" name="product" value="{{ filters.product ?? '' }}" class="form-control" placeholder="Filtrer par nom du produit…">
 			</div>
 			<div class="col-md-4 text-end">
 				<button class="btn btn-primary">
