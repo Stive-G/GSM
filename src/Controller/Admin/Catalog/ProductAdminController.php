@@ -69,7 +69,25 @@ final class ProductAdminController extends AbstractController
 
             /** @var \Symfony\Component\HttpFoundation\File\UploadedFile[] $uploaded */
             $uploaded = $request->files->get('images', []);
-            $imagePaths = $this->images->storeProductImages($sku, $uploaded);
+            $uploaded = is_array($uploaded) ? $uploaded : [];
+
+            $attemptedUpload = count(array_filter($uploaded)) > 0;
+
+            $uploadResult = $this->images->storeProductImages($sku, $uploaded);
+            $imagePaths = $uploadResult['paths'] ?? [];
+            $uploadErrors = $uploadResult['errors'] ?? [];
+
+            foreach ($uploadErrors as $msg) {
+                $this->addFlash('warning', $msg);
+            }
+
+            // Si user a tenté un upload mais 0 image acceptée => on bloque la création
+            if ($attemptedUpload && count($imagePaths) === 0) {
+                $this->addFlash('danger', "Aucune image n'a été acceptée (format/poids invalide).");
+                return $this->render('admin/catalog/products/new.html.twig', [
+                    'categories' => $categories,
+                ]);
+            }
 
             $attributes = $this->buildAttributes(
                 $request->request->all('attribute_keys'),
@@ -95,7 +113,12 @@ final class ProductAdminController extends AbstractController
 
             $this->products->create($data);
 
-            $this->addFlash('success', 'Produit créé.');
+            if ($uploadErrors) {
+                $this->addFlash('warning', 'Produit créé, mais certaines images ont été refusées.');
+            } else {
+                $this->addFlash('success', 'Produit créé.');
+            }
+
             return $this->redirectToRoute('admin_catalog_products_index');
         }
 
@@ -114,7 +137,6 @@ final class ProductAdminController extends AbstractController
 
         $result = $this->products->search($filters, 1, 100);
 
-        // mapping categoryId -> label (pour afficher le nom dans les cards/modal)
         $cats = $this->categories->findAll();
         $categoryMap = [];
         foreach ($cats as $c) {
@@ -139,6 +161,22 @@ final class ProductAdminController extends AbstractController
         $categories = $this->categories->findAll();
 
         if ($request->isMethod('POST')) {
+
+            // --- suppression d'une image (sans supprimer le fichier disque) ---
+            $removeOne = trim((string) $request->request->get('remove_one', ''));
+            if ($removeOne !== '') {
+                $existing = array_values(array_filter((array)($product['images'] ?? [])));
+                $newList = array_values(array_diff($existing, [$removeOne]));
+
+                $this->products->update($id, [
+                    'images'    => $newList,
+                    'updatedAt' => new \MongoDB\BSON\UTCDateTime(),
+                ]);
+
+                $this->addFlash('success', 'Image supprimée.');
+                return $this->redirectToRoute('admin_catalog_products_edit', ['id' => $id]);
+            }
+
             $sku   = trim((string) $request->request->get('sku'));
             $label = trim((string) $request->request->get('label'));
 
@@ -155,11 +193,27 @@ final class ProductAdminController extends AbstractController
                 ]);
             }
 
-            $existing = (array)($product['images'] ?? []);
+            $existing = array_values(array_filter((array)($product['images'] ?? [])));
 
             /** @var \Symfony\Component\HttpFoundation\File\UploadedFile[] $uploaded */
             $uploaded = $request->files->get('images', []);
-            $newPaths = $this->images->storeProductImages($sku, $uploaded);
+            $uploaded = is_array($uploaded) ? $uploaded : [];
+
+            $attemptedUpload = count(array_filter($uploaded)) > 0;
+
+            $uploadResult = $this->images->storeProductImages($sku, $uploaded);
+            $newPaths = $uploadResult['paths'] ?? [];
+            $uploadErrors = $uploadResult['errors'] ?? [];
+
+            foreach ($uploadErrors as $msg) {
+                $this->addFlash('warning', $msg);
+            }
+
+            // Si user a tenté un upload mais 0 image acceptée => on bloque l'update
+            if ($attemptedUpload && count($newPaths) === 0) {
+                $this->addFlash('danger', "Aucune image n'a été acceptée (format/poids invalide).");
+                return $this->redirectToRoute('admin_catalog_products_edit', ['id' => $id]);
+            }
 
             $manualText = (string) $request->request->get('images', '');
             $manual = array_values(array_filter(array_map('trim', preg_split('/\R/', $manualText) ?: [])));
@@ -168,6 +222,8 @@ final class ProductAdminController extends AbstractController
                 $request->request->all('attribute_keys'),
                 $request->request->all('attribute_values')
             );
+
+            $finalImages = array_values(array_unique(array_merge($existing, $newPaths, $manual)));
 
             $update = [
                 'sku'         => $sku,
@@ -179,14 +235,19 @@ final class ProductAdminController extends AbstractController
                 'price_ttc'   => (float)($request->request->get('price_ttc') ?? 0),
                 'description' => $request->request->get('description') ?: null,
                 'attributes'  => $attributes,
-                'images'      => array_values(array_unique(array_merge($existing, $newPaths, $manual))),
+                'images'      => $finalImages,
                 'updatedAt'   => new \MongoDB\BSON\UTCDateTime(),
             ];
 
             $this->products->update($id, $update);
 
-            $this->addFlash('success', 'Produit mis à jour.');
-            return $this->redirectToRoute('admin_catalog_products_index');
+            if ($uploadErrors) {
+                $this->addFlash('warning', 'Produit mis à jour, mais certaines images ont été refusées.');
+            } else {
+                $this->addFlash('success', 'Produit mis à jour.');
+            }
+
+            return $this->redirectToRoute('admin_catalog_products_edit', ['id' => $id]);
         }
 
         return $this->render('admin/catalog/products/edit.html.twig', [

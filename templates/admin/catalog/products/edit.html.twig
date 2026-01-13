@@ -108,32 +108,28 @@
 								{% for url in imgs %}
 									<div class="col-6 col-md-4 col-lg-3">
 										<div class="border rounded p-2 h-100 d-flex flex-column gap-2">
+
 											<div class="ratio ratio-1x1 bg-dark rounded overflow-hidden">
 												<img src="{{ url }}" alt="Image produit" style="width:100%; height:100%; object-fit:cover;">
 											</div>
 
 											<div class="d-flex align-items-center justify-content-between gap-2">
-												<a class="btn btn-sm btn-outline-secondary" href="{{ url }}" target="_blank" rel="noopener">
+												<a class="btn btn-sm btn-outline-secondary" href="{{ url }}" target="_blank" rel="noopener" title="Voir l'image">
 													<i class="fa fa-external-link-alt"></i>
 												</a>
 
-												<label class="btn btn-sm btn-outline-danger m-0">
-													<input type="checkbox" class="d-none" name="remove_images[]" value="{{ url }}">
+												<button type="submit" name="remove_one" value="{{ url }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer cette image du produit ?');" title="Supprimer l'image">
 													<i class="fa fa-trash"></i>
-													Suppr.
-												</label>
+												</button>
 											</div>
 
-											<div class="text-muted small" style="word-break:break-all;">
-												{{ url }}
-											</div>
 										</div>
 									</div>
 								{% endfor %}
 							</div>
 
 							<small class="text-muted d-block mt-2">
-								Coche “Suppr.” pour retirer une image du produit (et optionnellement supprimer le fichier du serveur).
+								Clique sur “Supprimer” pour retirer l’image du produit.
 							</small>
 						{% else %}
 							<div class="text-muted">Aucune image enregistrée.</div>
