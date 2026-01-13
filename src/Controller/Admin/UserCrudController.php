@@ -1,19 +1,19 @@
 <?php
+
 namespace App\Controller\Admin;
 
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
-use EasyCorp\Bundle\EasyAdminBundle\Field\ArrayField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-class UserCrudController extends AbstractCrudController
+final class UserCrudController extends AbstractCrudController
 {
-    public function __construct(private UserPasswordHasherInterface $hasher) {}
+    public function __construct(private readonly UserPasswordHasherInterface $hasher) {}
 
     public static function getEntityFqcn(): string
     {
@@ -28,19 +28,50 @@ class UserCrudController extends AbstractCrudController
             ->setEntityLabelInPlural('Utilisateurs');
     }
 
+    private function roleChoices(): array
+    {
+        return [
+            'Admin'      => 'ROLE_ADMIN',
+            'Direction'  => 'ROLE_DIRECTION',
+            'Magasinier' => 'ROLE_MAGASINIER',
+            'Vendeur'    => 'ROLE_VENDEUR',
+        ];
+    }
+
+    private function normalizeRoles(User $user): void
+    {
+        $roles = $user->getRoles();
+
+        // On retire ROLE_USER pour ne garder que le "rôle métier"
+        $main = array_values(array_diff($roles, ['ROLE_USER']))[0] ?? null;
+
+        $final = ['ROLE_USER'];
+        if ($main) {
+            $final[] = $main;
+        }
+
+        $user->setRoles(array_values(array_unique($final)));
+    }
+
     public function configureFields(string $pageName): iterable
     {
-        yield EmailField::new('email');
-        yield ChoiceField::new('roles')
-            ->setChoices([
-                'Admin'      => 'ROLE_ADMIN',
-                'Direction'  => 'ROLE_DIRECTION',
-                'Magasinier' => 'ROLE_MAGASINIER',
-                'Vendeur'    => 'ROLE_VENDEUR',
-            ])
-            ->allowMultipleChoices()
-            ->renderExpanded(false);
-        yield ArrayField::new('roles')->onlyOnIndex()->setLabel('Rôles (vue)');
+        // Index : email NON cliquable
+        yield TextField::new('email', 'Email')
+            ->onlyOnIndex();
+
+        // Index : rôle
+        yield TextField::new('mainRoleLabel', 'Rôle')
+            ->onlyOnIndex();
+
+        // Formulaire
+        yield EmailField::new('email')
+            ->onlyOnForms();
+
+        yield ChoiceField::new('mainRole', 'Rôle')
+            ->setChoices($this->roleChoices())
+            ->renderExpanded(false)
+            ->onlyOnForms();
+
         yield TextField::new('plainPassword', 'Mot de passe')
             ->onlyOnForms()
             ->setFormTypeOption('mapped', false)
@@ -50,18 +81,36 @@ class UserCrudController extends AbstractCrudController
     public function persistEntity(EntityManagerInterface $em, $entityInstance): void
     {
         if ($entityInstance instanceof User) {
-            $plain = $this->getContext()->getRequest()->request->all()['User']['plainPassword'] ?? null;
-            if ($plain) $entityInstance->setPassword($this->hasher->hashPassword($entityInstance, $plain));
+            $data = $this->getContext()->getRequest()->request->all();
+            $plain = $data['User']['plainPassword'] ?? null;
+
+            if (is_string($plain) && trim($plain) !== '') {
+                $entityInstance->setPassword(
+                    $this->hasher->hashPassword($entityInstance, $plain)
+                );
+            }
+
+            $this->normalizeRoles($entityInstance);
         }
+
         parent::persistEntity($em, $entityInstance);
     }
 
     public function updateEntity(EntityManagerInterface $em, $entityInstance): void
     {
         if ($entityInstance instanceof User) {
-            $plain = $this->getContext()->getRequest()->request->all()['User']['plainPassword'] ?? null;
-            if ($plain) $entityInstance->setPassword($this->hasher->hashPassword($entityInstance, $plain));
+            $data = $this->getContext()->getRequest()->request->all();
+            $plain = $data['User']['plainPassword'] ?? null;
+
+            if (is_string($plain) && trim($plain) !== '') {
+                $entityInstance->setPassword(
+                    $this->hasher->hashPassword($entityInstance, $plain)
+                );
+            }
+
+            $this->normalizeRoles($entityInstance);
         }
+
         parent::updateEntity($em, $entityInstance);
     }
 }

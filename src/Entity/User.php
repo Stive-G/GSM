@@ -111,4 +111,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // @deprecated, to be removed when upgrading to Symfony 8
     }
+    public function getMainRole(): ?string
+    {
+        $roles = $this->getRoles(); // inclut ROLE_USER
+        return array_values(array_diff($roles, ['ROLE_USER']))[0] ?? null;
+    }
+
+    public function setMainRole(?string $role): static
+    {
+        $final = ['ROLE_USER'];
+        if ($role) {
+            $final[] = $role;
+        }
+        $this->roles = array_values(array_unique($final)); // on écrit directement le champ roles
+        return $this;
+    }
+
+    public function getMainRoleLabel(): string
+    {
+        return match ($this->getMainRole()) {
+            'ROLE_ADMIN' => 'Admin',
+            'ROLE_DIRECTION' => 'Direction',
+            'ROLE_MAGASINIER' => 'Magasinier',
+            'ROLE_VENDEUR' => 'Vendeur',
+            default => '—',
+        };
+    }
 }

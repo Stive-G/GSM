@@ -10,11 +10,6 @@
 	<link rel="stylesheet" href="{{ asset('assets/css/admin-dashboard.css') }}">
 {% endblock %}
 
-{% block body_javascript %}
-	{{ parent() }}
-	{# <script src="{{ asset('assets/js/admin-dashboard.js') }}"></script> #}
-{% endblock %}
-
 {% block main %}
 	{# ===================== KPI ===================== #}
 	<div class="kpi container-fluid px-0 mb-4">
@@ -82,7 +77,6 @@
 
 		{% if countLowStock > 0 %}
 			<div class="row g-3 row-cols-1 row-cols-md-2 row-cols-xl-3 mb-3">
-
 				{% for s in lowStocks %}
 					{% set q = s.quantity + 0 %}
 					{% set p = (q / (threshold ?: 1) * 100) | round(0, 'floor') %}
@@ -92,11 +86,10 @@
 						<div class="low-card h-100 p-3">
 							<div class="d-flex justify-content-between align-items-start mb-2">
 								<div>
-									<div class="fw-semibold">{{ s.article.label }}</div>
+									<div class="fw-semibold">{{ s.product.label }}</div>
 									<div class="low-meta">
-										{{ s.conditionnement.label ?? '—' }}
-										·
-										{{ s.magasin.name }}
+										SKU :
+										{{ s.product.sku ?? '—' }}
 									</div>
 								</div>
 
@@ -113,38 +106,36 @@
 							</div>
 
 							<div class="d-flex justify-content-between muted" style="font-size:.8rem">
-								<span>Seuil&nbsp;:
+								<span>Seuil :
 									{{ threshold }}</span>
 								<span>{{ p }}%</span>
 							</div>
 						</div>
 					</div>
 				{% endfor %}
-
 			</div>
 
-			<div class="table-responsive">
-				<table class="table table-sm table-striped align-middle">
+			<div class="table-responsive dash-table-wrap">
+				<table class="table table-sm table-striped align-middle dash-table">
 					<thead class="table-light">
 						<tr>
 							<th>Produit</th>
-							<th>Cond.</th>
-							<th>Magasin</th>
+							<th>SKU</th>
 							<th class="text-end">Qté</th>
 						</tr>
 					</thead>
 					<tbody>
 						{% for s in lowStocks %}
 							<tr>
-								<td class="fw-semibold">{{ s.article.label }}</td>
-								<td>{{ s.conditionnement.label ?? '-' }}</td>
-								<td>{{ s.magasin.name }}</td>
+								<td class="fw-semibold">{{ s.product.label }}</td>
+								<td class="text-muted">{{ s.product.sku ?? '—' }}</td>
 								<td class="text-end text-danger fw-bold">{{ s.quantity }}</td>
 							</tr>
 						{% endfor %}
 					</tbody>
 				</table>
 			</div>
+
 		{% else %}
 			<div class="row mt-4">
 				<div class="col-12 col-md-8 col-lg-6 mx-auto">

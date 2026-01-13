@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controller\Admin;
 
 use App\Entity\Client;
@@ -9,7 +10,10 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 
 class ClientCrudController extends AbstractCrudController
 {
-    public static function getEntityFqcn(): string { return Client::class; }
+    public static function getEntityFqcn(): string
+    {
+        return Client::class;
+    }
 
     public function configureCrud(Crud $crud): Crud
     {
@@ -20,7 +24,7 @@ class ClientCrudController extends AbstractCrudController
     public function configureFields(string $pageName): iterable
     {
         yield TextField::new('name', 'Nom');
-        yield TextField::new('phone', 'Téléphone')->hideOnIndex();
-        yield EmailField::new('email')->hideOnIndex();
+        yield TextField::new('phone', 'Téléphone');
+        yield TextField::new('email');
     }
 }

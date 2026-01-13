@@ -16,8 +16,9 @@ final class StockDashboardService
     }
 
     /**
-     * Retourne la liste lowStocks au format attendu par Twig:
-     * s.article.label / s.conditionnement.label / s.magasin.name / s.quantity
+     * Retourne lowStocks au format twig:
+     * - s.product.label
+     * - s.quantity
      */
     public function findLowStocks(int $threshold, int $limit = 30): array
     {
@@ -32,63 +33,52 @@ final class StockDashboardService
     private function buildLowStockPipeline(int $threshold, int $limit): array
     {
         return [
-            // 1) low stock
             ['$match' => [
                 'quantity' => ['$lte' => $threshold],
             ]],
-            // 2) ordre
             ['$sort' => ['quantity' => 1]],
-            // 3) limite
             ['$limit' => $limit],
 
-            // 4) join product -> article
+            // Si productId est déjà un ObjectId => ok
+            // Si productId est une string "66a..." => on tente de convertir
+            [
+                '$addFields' => [
+                    'productObjId' => [
+                        '$cond' => [
+                            'if' => ['$eq' => [['$type' => '$productId'], 'objectId']],
+                            'then' => '$productId',
+                            'else' => [
+                                '$convert' => [
+                                    'input' => '$productId',
+                                    'to' => 'objectId',
+                                    'onError' => null,
+                                    'onNull' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+
+            // join product
             ['$lookup' => [
                 'from' => 'products',
-                'localField' => 'productId',
+                'localField' => 'productObjId',
                 'foreignField' => '_id',
-                'as' => 'article',
+                'as' => 'product',
             ]],
             ['$unwind' => [
-                'path' => '$article',
+                'path' => '$product',
                 'preserveNullAndEmptyArrays' => true,
             ]],
 
-            // 5) join conditionnement
-            ['$lookup' => [
-                'from' => 'conditionnements',
-                'localField' => 'conditionnementId',
-                'foreignField' => '_id',
-                'as' => 'conditionnement',
-            ]],
-            ['$unwind' => [
-                'path' => '$conditionnement',
-                'preserveNullAndEmptyArrays' => true,
-            ]],
-
-            // 6) join magasin
-            ['$lookup' => [
-                'from' => 'magasins',
-                'localField' => 'magasinId',
-                'foreignField' => '_id',
-                'as' => 'magasin',
-            ]],
-            ['$unwind' => [
-                'path' => '$magasin',
-                'preserveNullAndEmptyArrays' => true,
-            ]],
-
-            // 7) projection clean
+            // projection clean (sans magasin/cond.)
             ['$project' => [
                 '_id' => 1,
                 'quantity' => 1,
-                'article' => [
-                    'label' => ['$ifNull' => ['$article.label', 'Produit inconnu']],
-                ],
-                'conditionnement' => [
-                    'label' => ['$ifNull' => ['$conditionnement.label', null]],
-                ],
-                'magasin' => [
-                    'name' => ['$ifNull' => ['$magasin.name', '—']],
+                'product' => [
+                    'label' => ['$ifNull' => ['$product.label', 'Produit inconnu']],
+                    'sku'   => ['$ifNull' => ['$product.sku', '—']],
                 ],
             ]],
         ];
