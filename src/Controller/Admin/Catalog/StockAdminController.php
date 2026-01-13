@@ -21,20 +21,37 @@ final class StockAdminController extends AbstractController
     #[AdminRoute('/', name: 'index')]
     public function index(Request $request): Response
     {
-        $filterProduct = trim((string) $request->query->get('productId', ''));
+        // Filtre par NOM produit
+        $filterProductName = trim((string) $request->query->get('product', ''));
 
         $query = [];
-        if ($filterProduct !== '') {
-            $query['productId'] = $filterProduct;
+
+        if ($filterProductName !== '') {
+            // Recherche produits (Mongo $text)
+            $result = $this->products->search(['text' => $filterProductName], 1, 200);
+            $items  = $result['items'] ?? [];
+
+            $ids = [];
+            foreach ($items as $p) {
+                $pid = (string) ($p['id'] ?? '');
+                if ($pid !== '') $ids[] = $pid;
+            }
+
+            // Si rien trouvé => aucun stock
+            $query['productId'] = empty($ids) ? '__none__' : ['$in' => array_values(array_unique($ids))];
         }
 
+        // Stocks
         $cursor = $this->mongo->stocks()->find($query, [
             'sort' => ['productId' => 1],
         ]);
 
         $rawStocks = iterator_to_array($cursor, false);
 
-        $stocks = [];
+        // 1) Normalise stocks + collect productIds uniques
+        $tmpStocks = [];
+        $productIds = [];
+
         foreach ($rawStocks as $doc) {
             $arr = $doc instanceof \MongoDB\Model\BSONDocument ? $doc->getArrayCopy() : (array) $doc;
 
@@ -42,30 +59,60 @@ final class StockAdminController extends AbstractController
             $productId = (string) ($arr['productId'] ?? '');
             $quantity  = (float)  ($arr['quantity'] ?? 0);
 
-            // label produit (optionnel)
-            $productLabel = $productId;
+            $tmpStocks[] = [
+                'id'        => $id,
+                'productId' => $productId,
+                'quantity'  => $quantity,
+            ];
+
             if ($productId !== '') {
+                $productIds[$productId] = true; // set
+            }
+        }
+
+        // 2) 1 seule requête produits pour récupérer les labels
+        $labelsById = [];
+        if (!empty($productIds)) {
+            $oids = [];
+            foreach (array_keys($productIds) as $pid) {
                 try {
-                    $prod = $this->products->findById($productId);
-                    if ($prod) {
-                        $productLabel = $prod['label'] ?? $productId;
-                    }
-                } catch (\Throwable $e) {
+                    $oids[] = new \MongoDB\BSON\ObjectId($pid);
+                } catch (\Throwable) {
+                    // ignore si pid pas un ObjectId valide
                 }
             }
 
+            if (!empty($oids)) {
+                $prodCursor = $this->mongo->products()->find(
+                    ['_id' => ['$in' => $oids]],
+                    ['projection' => ['label' => 1]]
+                );
+
+                foreach (iterator_to_array($prodCursor, false) as $pdoc) {
+                    $parr = $pdoc instanceof \MongoDB\Model\BSONDocument ? $pdoc->getArrayCopy() : (array) $pdoc;
+                    $pidStr = (string) ($parr['_id'] ?? '');
+                    $labelsById[$pidStr] = (string) ($parr['label'] ?? $pidStr);
+                }
+            }
+        }
+
+        // 3) Build final stocks
+        $stocks = [];
+        foreach ($tmpStocks as $s) {
+            $pid = $s['productId'];
+
             $stocks[] = [
-                'id'           => $id,
-                'productId'    => $productId,
-                'productLabel' => $productLabel,
-                'quantity'     => $quantity,
+                'id'           => $s['id'],
+                'productId'    => $pid,
+                'productLabel' => $labelsById[$pid] ?? $pid,
+                'quantity'     => $s['quantity'],
             ];
         }
 
         return $this->render('admin/catalog/stocks/index.html.twig', [
             'stocks'  => $stocks,
             'filters' => [
-                'productId' => $filterProduct,
+                'product' => $filterProductName,
             ],
         ]);
     }

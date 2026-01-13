@@ -96,7 +96,7 @@ final class ProductAdminController extends AbstractController
             $this->products->create($data);
 
             $this->addFlash('success', 'Produit créé.');
-            return $this->redirectToRoute('admin_admin_catalog_products_index');
+            return $this->redirectToRoute('admin_catalog_products_index');
         }
 
         return $this->render('admin/catalog/products/new.html.twig', [
@@ -114,7 +114,7 @@ final class ProductAdminController extends AbstractController
 
         $result = $this->products->search($filters, 1, 100);
 
-        // ✅ mapping categoryId -> label (pour afficher le nom dans les cards/modal)
+        // mapping categoryId -> label (pour afficher le nom dans les cards/modal)
         $cats = $this->categories->findAll();
         $categoryMap = [];
         foreach ($cats as $c) {
@@ -186,7 +186,7 @@ final class ProductAdminController extends AbstractController
             $this->products->update($id, $update);
 
             $this->addFlash('success', 'Produit mis à jour.');
-            return $this->redirectToRoute('admin_admin_catalog_products_index');
+            return $this->redirectToRoute('admin_catalog_products_index');
         }
 
         return $this->render('admin/catalog/products/edit.html.twig', [
@@ -208,7 +208,7 @@ final class ProductAdminController extends AbstractController
             $this->addFlash('success', 'Produit supprimé.');
         }
 
-        return $this->redirectToRoute('admin_admin_catalog_products_index');
+        return $this->redirectToRoute('admin_catalog_products_index');
     }
 
     private function buildAttributes(array $keys, array $vals): array
