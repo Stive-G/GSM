@@ -69,9 +69,9 @@ body.login-page main{
 
 /* Logo */
 .login-logo{
-  display:block;
-  margin: 0 auto 14px;
-  width: 140px;
+  display: block;
+  margin: auto; /* un peu plus d’air */
+  width: 390px;       /* augmente ici */
   height: auto;
   filter: drop-shadow(0 6px 18px rgba(0,0,0,.25));
 }
