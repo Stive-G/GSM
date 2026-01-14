@@ -36,9 +36,11 @@ jobs:
 
         env:
             APP_ENV: test
-            DATABASE_URL: "mysql://root:root@127.0.0.1:3306/gsm"
-            MONGODB_URL: "mongodb://127.0.0.1:27017/gsm"
-            MONGODB_DB: "gsm"
+            APP_DEBUG: 0
+            DATABASE_URL: "mysql://root:root@127.0.0.1:3306/gsm_test?serverVersion=8.0&charset=utf8mb4"
+            MONGODB_URI: "mongodb://127.0.0.1:27017/gsm_test"
+            MONGODB_DB: "gsm_test"
+            DEFAULT_URI: "http://localhost"
 
         steps:
             - name: Checkout repository
@@ -50,17 +52,6 @@ jobs:
                   php-version: "8.4"
                   extensions: mbstring, intl, pdo_mysql
                   coverage: none
-
-            - name: Create .env for CI
-              run: |
-                  echo "APP_ENV=test" > .env
-                  echo "APP_SECRET=ci_test_secret" >> .env
-                  echo 'DATABASE_URL="mysql://root:root@127.0.0.1:3306/gsm"' >> .env
-                  echo 'DEFAULT_URI="http://localhost"' >> .env
-                  echo 'MONGODB_URI="mongodb://127.0.0.1:27017/gsm"' >> .env
-                  echo 'MONGODB_DB="gsm"' >> .env
-
-              # working-directory: .  # inutile, par défaut on est déjà à la racine
 
             - name: Cache Composer dependencies
               uses: actions/cache@v4
@@ -87,8 +78,11 @@ jobs:
                     sleep 2
                   done
 
+            - name: Ensure test database exists
+              run: php bin/console doctrine:database:create --if-not-exists --env=test
+
             - name: Create test database schema
               run: php bin/console doctrine:schema:update --force --env=test
 
             - name: Run PHPUnit
-              run: ./vendor/bin/phpunit
+              run: ./vendor/bin/phpunit -c phpunit.dist.xml

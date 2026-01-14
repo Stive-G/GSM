@@ -4,6 +4,7 @@ namespace App\Tests\Controller;
 
 use App\Tests\Utils\TestUserFactory;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Routing\RouterInterface;
 
 class AdminLoginTest extends WebTestCase
 {
@@ -26,6 +27,9 @@ class AdminLoginTest extends WebTestCase
         ]);
 
         $client->submit($form);
+
+        // login success => redirect
+        $this->assertTrue($client->getResponse()->isRedirection());
         $client->followRedirect();
 
         $client->request('GET', '/admin');
@@ -39,12 +43,17 @@ class AdminLoginTest extends WebTestCase
         $client    = static::createClient();
         $container = static::getContainer();
 
+        $router = $container->get('router');
+        \assert($router instanceof RouterInterface);
+
         $em     = $container->get('doctrine')->getManager();
         $hasher = $container->get('security.password_hasher');
 
         TestUserFactory::createUser($em, $hasher);
 
+        // Login user normal (ROLE_USER)
         $crawler = $client->request('GET', '/login');
+        $this->assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Se connecter')->form([
             'email'    => 'user@test.com',
@@ -52,11 +61,13 @@ class AdminLoginTest extends WebTestCase
         ]);
 
         $client->submit($form);
+        $this->assertTrue($client->getResponse()->isRedirection());
         $client->followRedirect();
 
+        // /admin requires ROLE_VENDEUR; connected but forbidden => AccessDeniedHandler redirects to admin_forbidden
         $client->request('GET', '/admin');
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        $this->assertResponseRedirects($router->generate('admin_forbidden'), 302);
     }
 
     public function testInvalidPasswordRedirectsBackToLogin(): void
@@ -64,12 +75,16 @@ class AdminLoginTest extends WebTestCase
         $client    = static::createClient();
         $container = static::getContainer();
 
+        $router = $container->get('router');
+        \assert($router instanceof RouterInterface);
+
         $em     = $container->get('doctrine')->getManager();
         $hasher = $container->get('security.password_hasher');
 
         TestUserFactory::createUser($em, $hasher);
 
         $crawler = $client->request('GET', '/login');
+        $this->assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Se connecter')->form([
             'email'    => 'user@test.com',
@@ -78,23 +93,24 @@ class AdminLoginTest extends WebTestCase
 
         $client->submit($form);
 
-        // 1) il doit y avoir une redirection (vers la page de login)
+        // redirect back (login failure)
         $this->assertTrue($client->getResponse()->isRedirection());
 
-        // 2) après redirection, on est bien de nouveau sur /login
         $client->followRedirect();
         $this->assertResponseIsSuccessful();
-        $this->assertStringContainsString(
-            '<form method="post"',
-            $client->getResponse()->getContent(),
-        );
-        // On ne teste pas le texte "Identifiants invalides" car ton template ne l'affiche pas (pour l’instant).
+
+        // On vérifie qu'on est bien retombé sur la page login (via route générée)
+        // (assertResponseRedirects se fait AVANT followRedirect; ici on check le contenu)
+        $this->assertStringContainsString('<form method="post"', $client->getResponse()->getContent());
     }
 
     public function testLogoutClearsSession(): void
     {
         $client    = static::createClient();
         $container = static::getContainer();
+
+        $router = $container->get('router');
+        \assert($router instanceof RouterInterface);
 
         $em     = $container->get('doctrine')->getManager();
         $hasher = $container->get('security.password_hasher');
@@ -103,26 +119,27 @@ class AdminLoginTest extends WebTestCase
 
         // Login admin
         $crawler = $client->request('GET', '/login');
+        $this->assertResponseIsSuccessful();
+
         $form = $crawler->selectButton('Se connecter')->form([
             'email'    => 'admin@test.com',
             'password' => 'admin123',
         ]);
+
         $client->submit($form);
+        $this->assertTrue($client->getResponse()->isRedirection());
         $client->followRedirect();
 
         // Vérif : accès admin OK
         $client->request('GET', '/admin');
         $this->assertResponseIsSuccessful();
 
-        // Logout (adapter l'URL si besoin)
+        // Logout
         $client->request('GET', '/logout');
         $this->assertTrue($client->getResponse()->isRedirection());
 
-        // Ne pas followRedirect ici pour éviter le 404 sur /
-        // On vérifie simplement qu'après logout, un accès /admin n'est plus OK
+        // Après logout, /admin doit rediriger vers login (non connecté => app_login)
         $client->request('GET', '/admin');
-        $this->assertTrue(
-            $client->getResponse()->isRedirection() || $client->getResponse()->getStatusCode() === 403
-        );
+        $this->assertResponseRedirects($router->generate('app_login'), 302);
     }
 }
