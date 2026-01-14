@@ -7,29 +7,34 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Routing\RouterInterface;
 
 class AdminSecurityTest extends WebTestCase
 {
     private KernelBrowser $client;
     private EntityManagerInterface $em;
     private UserPasswordHasherInterface $hasher;
+    private RouterInterface $router;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        // 1) Créer le client AVANT d'accéder au container
         $this->client = static::createClient();
 
-        // 2) Récupérer les services
-        $container    = static::getContainer();
-        $this->em     = $container->get('doctrine')->getManager();
-        $this->hasher = $container->get('security.password_hasher');
+        $container     = static::getContainer();
+        $this->em      = $container->get('doctrine')->getManager();
+        $this->hasher  = $container->get('security.password_hasher');
+
+        $router = $container->get('router');
+        \assert($router instanceof RouterInterface);
+        $this->router = $router;
     }
 
     private function loginAs(string $email, string $password): void
     {
         $crawler = $this->client->request('GET', '/login');
+        $this->assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Se connecter')->form([
             'email'    => $email,
@@ -50,11 +55,11 @@ class AdminSecurityTest extends WebTestCase
         // Login vendeur
         $this->loginAs('vendeur@test.com', 'vendeur123');
 
-        // Route des logs (EasyAdmin)
+        // Route des logs (ROLE_ADMIN requis)
         $this->client->request('GET', '/admin/action-log');
 
-        // Le vendeur n'a PAS le droit de voir les logs
-        $this->assertSame(403, $this->client->getResponse()->getStatusCode());
+        // Connecté mais interdit -> AccessDeniedHandler redirige vers admin_forbidden
+        $this->assertResponseRedirects($this->router->generate('admin_forbidden'), 302);
     }
 
     public function testAdminCanAccessLogs(): void

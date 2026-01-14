@@ -1,5 +1,6 @@
 services:
   php:
+    image: gsm-php
     build:
       context: .
       dockerfile: docker/php/Dockerfile
@@ -13,10 +14,14 @@ services:
       - gsm_var:/var/www/html/var
       - gsm_uploads:/var/www/html/public/uploads
     depends_on:
-     mysql:
+      mysql:
         condition: service_healthy
-     mongo:
+      mongo:
         condition: service_healthy
+      mysql-init:
+        condition: service_completed_successfully
+      php-test-init:
+        condition: service_completed_successfully
 
   nginx:
     image: nginx:stable
@@ -47,6 +52,46 @@ services:
       interval: 3s
       timeout: 3s
       retries: 30
+
+  mysql-init:
+    image: mysql:8.0
+    container_name: gsm-mysql-init
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: >
+      bash -lc "
+      mysql -h mysql -uroot -proot -e
+      \"CREATE DATABASE IF NOT EXISTS gsm_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\"
+      "
+    restart: "no"
+
+  # Initialise automatiquement le schéma Doctrine pour la DB de test
+  php-test-init:
+    image: gsm-php
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: gsm-php-test-init
+    working_dir: /var/www/html
+    env_file:
+      - .env.docker
+    environment:
+      APP_ENV: test
+    volumes:
+      - ./:/var/www/html
+      - gsm_var:/var/www/html/var
+    depends_on:
+      mysql-init:
+        condition: service_completed_successfully
+      mongo:
+        condition: service_healthy
+    command: >
+      bash -lc "
+      php bin/console doctrine:schema:update --force --env=test
+      "
+    restart: "no"
+
   mongo:
     image: mongo:6.0
     container_name: gsm-mongo
@@ -61,6 +106,7 @@ services:
       timeout: 5s
       retries: 30
       start_period: 10s
+
 volumes:
   mysql_data:
   mongo_data:
