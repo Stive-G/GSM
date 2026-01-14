@@ -53,6 +53,18 @@ jobs:
                   extensions: mbstring, intl, pdo_mysql
                   coverage: none
 
+            - name: Create .env for CI
+              run: |
+                  cat > .env <<'EOF'
+                  APP_ENV=test
+                  APP_DEBUG=0
+                  APP_SECRET=ci_test_secret
+                  DATABASE_URL="mysql://root:root@127.0.0.1:3306/gsm_test?serverVersion=8.0&charset=utf8mb4"
+                  MONGODB_URI="mongodb://127.0.0.1:27017/gsm_test"
+                  MONGODB_DB="gsm_test"
+                  DEFAULT_URI="http://localhost"
+                  EOF
+
             - name: Cache Composer dependencies
               uses: actions/cache@v4
               with:
@@ -62,7 +74,7 @@ jobs:
                       ${{ runner.os }}-php-
 
             - name: Install Composer dependencies
-              run: composer install --no-progress --no-interaction --prefer-dist
+              run: composer install --no-progress --no-interaction --prefer-dist --no-scripts
 
             - name: Security audit (composer audit)
               run: composer audit --no-interaction || true
