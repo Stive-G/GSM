@@ -11,6 +11,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
+use Symfony\Component\Validator\Constraints as Assert;
 
 final class UserCrudController extends AbstractCrudController
 {
@@ -77,7 +78,10 @@ final class UserCrudController extends AbstractCrudController
         yield TextField::new('plainPassword', 'Mot de passe')
             ->onlyOnForms()
             ->setFormTypeOption('mapped', false)
-            ->setRequired($pageName === Crud::PAGE_NEW);
+            ->setRequired($pageName === Crud::PAGE_NEW)
+            ->setFormTypeOption('constraints', [
+                new Assert\Length(['min' => 8, 'minMessage' => '8 caractères minimum.'])
+            ]);
     }
 
     public function persistEntity(EntityManagerInterface $em, $entityInstance): void

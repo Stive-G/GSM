@@ -8,6 +8,7 @@
 {% block main %}
 	<div class="content-panel">
 		<form method="post">
+			<input type="hidden" name="_token" value="{{ csrf_token('catalog_stock_edit_' ~ id) }}">
 			<div class="row">
 				<div class="col-md-8 mb-3">
 					<label class="form-label">Produit</label>

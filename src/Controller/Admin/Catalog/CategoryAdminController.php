@@ -29,6 +29,16 @@ final class CategoryAdminController extends AbstractController
     {
         if ($request->isMethod('POST')) {
             $name = trim((string)$request->request->get('name'));
+
+            if (!$this->isCsrfTokenValid('catalog_category_new', (string)$request->request->get('_token'))) {
+                throw $this->createAccessDeniedException('CSRF invalide.');
+            }
+
+            if (mb_strlen($name) > 120) {
+                $this->addFlash('danger', 'Nom trop long (120 max).');
+                return $this->render('admin/catalog/categories/new.html.twig');
+            }
+
             if ($name === '') {
                 $this->addFlash('danger', 'Le nom est obligatoire.');
             } else {

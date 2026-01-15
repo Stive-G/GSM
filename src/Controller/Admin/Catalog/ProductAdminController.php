@@ -57,8 +57,12 @@ final class ProductAdminController extends AbstractController
         $categories = $this->categories->findAll();
 
         if ($request->isMethod('POST')) {
-            $sku   = trim((string) $request->request->get('sku'));
+            $sku   = strtoupper(trim((string) $request->request->get('sku')));
             $label = trim((string) $request->request->get('label'));
+
+            if (!$this->isCsrfTokenValid('catalog_product_new', (string)$request->request->get('_token'))) {
+                throw $this->createAccessDeniedException('CSRF invalide.');
+            }
 
             if ($sku === '' || $label === '') {
                 $this->addFlash('danger', 'SKU et Libellé sont obligatoires.');
@@ -72,6 +76,39 @@ final class ProductAdminController extends AbstractController
                 return $this->render('admin/catalog/products/new.html.twig', [
                     'categories' => $categories,
                 ]);
+            }
+
+            if (!preg_match('/^[A-Z0-9_-]{3,40}$/', $sku)) {
+                $this->addFlash('danger', 'SKU invalide (3-40, lettres/chiffres, - ou _).');
+                return $this->render('admin/catalog/products/new.html.twig', ['categories' => $categories]);
+            }
+
+            if (mb_strlen($label) > 160) {
+                $this->addFlash('danger', 'Libellé trop long (160 max).');
+                return $this->render('admin/catalog/products/new.html.twig', ['categories' => $categories]);
+            }
+
+            $unit = trim((string)$request->request->get('unit', ''));
+            if ($unit !== '' && !preg_match('/^[\pL0-9\s\.\-\/]{1,20}$/u', $unit)) {
+                $this->addFlash('danger', 'Unité invalide.');
+                return $this->render('admin/catalog/products/new.html.twig', ['categories' => $categories]);
+            }
+
+            $priceHt  = (float)($request->request->get('price_ht') ?? 0);
+            $priceTtc = (float)($request->request->get('price_ttc') ?? 0);
+
+            if ($priceHt < 0 || $priceTtc < 0 || $priceHt > 10000000 || $priceTtc > 10000000) {
+                $this->addFlash('danger', 'Prix invalide.');
+                return $this->render('admin/catalog/products/new.html.twig', ['categories' => $categories]);
+            }
+
+            $categoryId = $request->request->get('categoryId') ?: null;
+            if ($categoryId !== null) {
+                try {
+                    new \MongoDB\BSON\ObjectId((string)$categoryId);
+                } catch (\Throwable) {
+                    $categoryId = null;
+                }
             }
 
             /** @var \Symfony\Component\HttpFoundation\File\UploadedFile[] $uploaded */
@@ -107,10 +144,10 @@ final class ProductAdminController extends AbstractController
                 'sku'         => $sku,
                 'label'       => $label,
                 'slug'        => $this->slugify($label),
-                'categoryId'  => $request->request->get('categoryId') ?: null,
-                'unit'        => $request->request->get('unit') ?: null,
-                'price_ht'    => (float)($request->request->get('price_ht') ?? 0),
-                'price_ttc'   => (float)($request->request->get('price_ttc') ?? 0),
+                'categoryId'  => $categoryId,
+                'unit'        => $unit !== '' ? $unit : null,
+                'price_ht'    => $priceHt,
+                'price_ttc'   => $priceTtc,
                 'description' => $request->request->get('description') ?: null,
                 'attributes'  => $attributes,
                 'images'      => $imagePaths,
@@ -169,11 +206,15 @@ final class ProductAdminController extends AbstractController
 
         if ($request->isMethod('POST')) {
 
+            if (!$this->isCsrfTokenValid('catalog_product_edit_' . $id, (string)$request->request->get('_token'))) {
+                throw $this->createAccessDeniedException('CSRF invalide.');
+            }
+
             // --- suppression d'une image (sans supprimer le fichier disque) ---
             $removeOne = trim((string) $request->request->get('remove_one', ''));
             if ($removeOne !== '') {
                 $existing = array_values(array_filter((array)($product['images'] ?? [])));
-                $newList = array_values(array_diff($existing, [$removeOne]));
+                $newList  = array_values(array_diff($existing, [$removeOne]));
 
                 $this->products->update($id, [
                     'images'    => $newList,
@@ -184,20 +225,45 @@ final class ProductAdminController extends AbstractController
                 return $this->redirectToRoute('admin_catalog_products_edit', ['id' => $id]);
             }
 
-            $sku   = trim((string) $request->request->get('sku'));
+            $sku   = strtoupper(trim((string) $request->request->get('sku')));
             $label = trim((string) $request->request->get('label'));
 
             if ($sku === '' || $label === '') {
                 $this->addFlash('danger', 'SKU et Libellé sont obligatoires.');
-                return $this->render('admin/catalog/products/edit.html.twig', [
-                    'product'      => $product,
-                    'categories'   => $categories,
-                    'attributes'   => $product['attributes'] ?? [],
-                    'description'  => $product['description'] ?? '',
-                    'images_text'  => implode("\n", (array)($product['images'] ?? [])),
-                    'price_ht'     => (float)($product['price_ht'] ?? 0),
-                    'price_ttc'    => (float)($product['price_ttc'] ?? 0),
-                ]);
+                return $this->redirectToRoute('admin_catalog_products_edit', ['id' => $id]);
+            }
+
+            if (!preg_match('/^[A-Z0-9_-]{3,40}$/', $sku)) {
+                $this->addFlash('danger', 'SKU invalide (3-40, lettres/chiffres, - ou _).');
+                return $this->redirectToRoute('admin_catalog_products_edit', ['id' => $id]);
+            }
+
+            if (mb_strlen($label) > 160) {
+                $this->addFlash('danger', 'Libellé trop long (160 max).');
+                return $this->redirectToRoute('admin_catalog_products_edit', ['id' => $id]);
+            }
+
+            $unit = trim((string)$request->request->get('unit', ''));
+            if ($unit !== '' && !preg_match('/^[\pL0-9\s\.\-\/]{1,20}$/u', $unit)) {
+                $this->addFlash('danger', 'Unité invalide.');
+                return $this->redirectToRoute('admin_catalog_products_edit', ['id' => $id]);
+            }
+
+            $priceHt  = (float)($request->request->get('price_ht') ?? 0);
+            $priceTtc = (float)($request->request->get('price_ttc') ?? 0);
+
+            if ($priceHt < 0 || $priceTtc < 0 || $priceHt > 10000000 || $priceTtc > 10000000) {
+                $this->addFlash('danger', 'Prix invalide.');
+                return $this->redirectToRoute('admin_catalog_products_edit', ['id' => $id]);
+            }
+
+            $categoryId = $request->request->get('categoryId') ?: null;
+            if ($categoryId !== null) {
+                try {
+                    new \MongoDB\BSON\ObjectId((string)$categoryId);
+                } catch (\Throwable) {
+                    $categoryId = null;
+                }
             }
 
             $existing = array_values(array_filter((array)($product['images'] ?? [])));
@@ -209,7 +275,7 @@ final class ProductAdminController extends AbstractController
             $attemptedUpload = count(array_filter($uploaded)) > 0;
 
             $uploadResult = $this->images->storeProductImages($sku, $uploaded);
-            $newPaths = $uploadResult['paths'] ?? [];
+            $newPaths     = $uploadResult['paths'] ?? [];
             $uploadErrors = $uploadResult['errors'] ?? [];
 
             foreach ($uploadErrors as $msg) {
@@ -236,10 +302,10 @@ final class ProductAdminController extends AbstractController
                 'sku'         => $sku,
                 'label'       => $label,
                 'slug'        => $this->slugify($label),
-                'categoryId'  => $request->request->get('categoryId') ?: null,
-                'unit'        => $request->request->get('unit') ?: null,
-                'price_ht'    => (float)($request->request->get('price_ht') ?? 0),
-                'price_ttc'   => (float)($request->request->get('price_ttc') ?? 0),
+                'categoryId'  => $categoryId,
+                'unit'        => $unit !== '' ? $unit : null,
+                'price_ht'    => $priceHt,
+                'price_ttc'   => $priceTtc,
                 'description' => $request->request->get('description') ?: null,
                 'attributes'  => $attributes,
                 'images'      => $finalImages,
@@ -282,14 +348,21 @@ final class ProductAdminController extends AbstractController
     private function buildAttributes(array $keys, array $vals): array
     {
         $attributes = [];
-        $count = max(count($keys), count($vals));
+        $count = min(max(count($keys), count($vals)), 30); // max 30
 
         for ($i = 0; $i < $count; $i++) {
             $k = trim((string)($keys[$i] ?? ''));
             $v = trim((string)($vals[$i] ?? ''));
-            if ($k !== '' && $v !== '') {
-                $attributes[$k] = $v;
-            }
+
+            if ($k === '' || $v === '') continue;
+
+            if (mb_strlen($k) > 50)  $k = mb_substr($k, 0, 50);
+            if (mb_strlen($v) > 200) $v = mb_substr($v, 0, 200);
+
+            // interdit clés Mongo “dangereuses”
+            if (str_contains($k, '$') || str_contains($k, '.')) continue;
+
+            $attributes[$k] = $v;
         }
 
         return $attributes;

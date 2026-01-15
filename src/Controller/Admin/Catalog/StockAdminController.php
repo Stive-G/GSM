@@ -138,28 +138,55 @@ final class StockAdminController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
+
+            if (!$this->isCsrfTokenValid('catalog_stock_new', (string)$request->request->get('_token'))) {
+                throw $this->createAccessDeniedException('CSRF invalide.');
+            }
+
             $productId = trim((string) $request->request->get('productId', ''));
             $quantity  = (float) $request->request->get('quantity', 0);
 
             if ($productId === '') {
                 $this->addFlash('danger', 'Le produit est obligatoire.');
-            } else {
-                // 1 stock par produit => upsert sur productId
-                $this->mongo->stocks()->updateOne(
-                    ['productId' => $productId],
-                    [
-                        '$set' => [
-                            'productId' => $productId,
-                            'quantity'  => $quantity,
-                        ],
-                    ],
-                    ['upsert' => true]
-                );
-
-                $this->addFlash('success', 'Stock créé / mis à jour.');
-                return $this->redirectToRoute('admin_catalog_stocks_index');
+                return $this->render('admin/catalog/stocks/new.html.twig', [
+                    'products' => $products,
+                ]);
             }
+
+            // productId doit être un ObjectId valide (sinon données pourries)
+            try {
+                new \MongoDB\BSON\ObjectId($productId);
+            } catch (\Throwable) {
+                $this->addFlash('danger', 'Produit invalide.');
+                return $this->render('admin/catalog/stocks/new.html.twig', [
+                    'products' => $products,
+                ]);
+            }
+
+            // auantité bornée (pas négatif)
+            if ($quantity < 0 || $quantity > 100000000) {
+                $this->addFlash('danger', 'Quantité invalide.');
+                return $this->render('admin/catalog/stocks/new.html.twig', [
+                    'products' => $products,
+                ]);
+            }
+
+            // 1 stock par produit => upsert sur productId
+            $this->mongo->stocks()->updateOne(
+                ['productId' => $productId],
+                [
+                    '$set' => [
+                        'productId' => $productId,
+                        'quantity'  => $quantity,
+                    ],
+                ],
+                ['upsert' => true]
+            );
+
+            $this->addFlash('success', 'Stock créé / mis à jour.');
+            return $this->redirectToRoute('admin_catalog_stocks_index');
         }
+
 
         return $this->render('admin/catalog/stocks/new.html.twig', [
             'products' => $products,
@@ -193,12 +220,25 @@ final class StockAdminController extends AbstractController
                 if ($prod) {
                     $productLabel = $prod['label'] ?? $productId;
                 }
-            } catch (\Throwable $e) {
+            } catch (\Throwable) {
+                // ignore
             }
         }
 
         if ($request->isMethod('POST')) {
+
+            // CSRF (clé unique par ligne)
+            if (!$this->isCsrfTokenValid('catalog_stock_edit_' . $id, (string)$request->request->get('_token'))) {
+                throw $this->createAccessDeniedException('CSRF invalide.');
+            }
+
             $quantity = (float) $request->request->get('quantity', 0);
+
+            // validation quantité
+            if ($quantity < 0 || $quantity > 100000000) {
+                $this->addFlash('danger', 'Quantité invalide.');
+                return $this->redirectToRoute('admin_catalog_stocks_edit', ['id' => $id]);
+            }
 
             $this->mongo->stocks()->updateOne(
                 ['_id' => $oid],
