@@ -208,7 +208,7 @@
 						</td>
 						<td class="center">{{ l.unit }}</td>
 						<td class="right">{{ l.unitPriceHt|money }}</td>
-						<td class="right">{{ l.quantity|money }}</td>
+						<td class="right">{{ l.quantity|number_format(0, '.', '') }}</td>
 						<td class="right">
 							<strong>{{ lineTotal|money }}</strong>
 						</td>
