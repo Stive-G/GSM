@@ -25,13 +25,11 @@
 					<div class="mt-2 d-flex gap-2 flex-wrap">
 						<span class="badge bg-light text-dark border">
 							HT
-							{{ (p.price_ht ?? 0)|number_format(2, ',', ' ') }}
-							€
+							{{ (p.price_ht ?? 0)|money }}
 						</span>
 						<span class="badge bg-light text-dark border">
 							TTC
-							{{ (p.price_ttc ?? 0)|number_format(2, ',', ' ') }}
-							€
+							{{ (p.price_ttc ?? 0)|money }}
 						</span>
 					</div>
 				</div>

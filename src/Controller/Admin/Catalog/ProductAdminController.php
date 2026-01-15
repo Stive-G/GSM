@@ -37,12 +37,17 @@ final class ProductAdminController extends AbstractController
             $cid = (string)($c['id'] ?? $c['_id'] ?? '');
             $categoryMap[$cid] = (string)($c['name'] ?? $c['label'] ?? $cid);
         }
+        $currency = (string) $this->getParameter('app.currency');
+        $currencyLabel = (string) $this->getParameter('app.currency_label');
+
 
         return $this->render('admin/catalog/products/index.html.twig', [
             'products'     => $result['items'] ?? $result,
             'categories'   => $cats,
             'categoryMap'  => $categoryMap,
             'filters'      => $filters,
+            'currency' => $currency,
+            'currencyLabel' => $currencyLabel,
         ]);
     }
 

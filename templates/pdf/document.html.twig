@@ -140,8 +140,8 @@
 					<img class="logo" src="{{ logoDataUri }}" alt="GSM">
 					<div class="company">
 						<strong>GSM</strong><br>
-						10 rue Exemple, 75000 Paris<br>
-						contact@gsm.local — 01 02 03 04 05
+						10 rue Exemple, Centre Ville, Brazzaville<br>
+						contact@gsm.local — +242 01 002 03 04
 					</div>
 				</div>
 
@@ -207,12 +207,10 @@
 							<strong>{{ l.productLabel }}</strong><br>
 						</td>
 						<td class="center">{{ l.unit }}</td>
-						<td class="right">{{ l.unitPriceHt|number_format(2, ',', ' ') }}
-							€</td>
-						<td class="right">{{ l.quantity|number_format(2, ',', ' ') }}</td>
+						<td class="right">{{ l.unitPriceHt|money }}</td>
+						<td class="right">{{ l.quantity|money }}</td>
 						<td class="right">
-							<strong>{{ lineTotal|number_format(2, ',', ' ') }}
-								€</strong>
+							<strong>{{ lineTotal|money }}</strong>
 						</td>
 					</tr>
 				{% else %}
@@ -223,31 +221,36 @@
 			</tbody>
 		</table>
 
-		{% set tvaRate = 0.20 %}
+		{% if currency == 'EUR' %}
+			{% set tvaRate = 0.20 %}
+		{% else %}
+			{% set tvaRate = 0 %}
+		{% endif %}
+
 		{% set tva = totalHt * tvaRate %}
 		{% set totalTtc = totalHt + tva %}
 
 		<div class="totals">
 			<div class="totals-row">
 				<div>Total HT</div>
-				<div>{{ totalHt|number_format(2, ',', ' ') }}
-					€</div>
+				<div>{{ totalHt|money }}</div>
 			</div>
-			<div class="totals-row">
-				<div>TVA (20%)</div>
-				<div>{{ tva|number_format(2, ',', ' ') }}
-					€</div>
-			</div>
+
+			{% if tvaRate > 0 %}
+				<div class="totals-row">
+					<div>TVA ({{ (tvaRate * 100)|number_format(0) }}%)</div>
+					<div>{{ tva|money }}</div>
+				</div>
+			{% endif %}
+
 			<div class="totals-row">
 				<div>
 					<strong>Total TTC</strong>
 				</div>
 				<div>
-					<strong>{{ totalTtc|number_format(2, ',', ' ') }}
-						€</strong>
+					<strong>{{ totalTtc|money }}</strong>
 				</div>
 			</div>
 		</div>
-
 	</body>
-</html>
+</html></div></body></html>

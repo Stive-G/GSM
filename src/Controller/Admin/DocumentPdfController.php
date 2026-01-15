@@ -31,6 +31,8 @@ class DocumentPdfController extends AbstractController
         $html = $this->renderView('pdf/document.html.twig', [
             'doc' => $doc,
             'logoDataUri' => $logoDataUri,
+            'currency' => (string) $this->getParameter('app.currency'),
+            'currencyLabel' => (string) $this->getParameter('app.currency_label'),
         ]);
 
         $options = new Options();

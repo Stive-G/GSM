@@ -3,6 +3,8 @@ parameters:
     public_upload_dir: "%kernel.project_dir%/public/uploads"
     mongo_db_name: "gsm"
     mongo_products_collection: "products"
+    app.currency: "XAF"
+    app.currency_label: "FCFA"
 
 services:
     _defaults:
@@ -52,3 +54,9 @@ services:
         arguments:
             $mongoDbName: "%mongo_db_name%"
             $mongoCollection: "%mongo_products_collection%"
+
+    App\Twig\MoneyExtension:
+        arguments:
+            $currency: "%app.currency%"
+            $currencyLabel: "%app.currency_label%"
+        tags: ["twig.extension"]

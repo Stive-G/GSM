@@ -29,10 +29,10 @@
 						{{ cname ?? '-' }}
 					</td>
 
-					<td>{{ (p.price_ht ?? 0)|number_format(2, ',', ' ') }}
-						€</td>
-					<td>{{ (p.price_ttc ?? 0)|number_format(2, ',', ' ') }}
-						€</td>
+					<td>{{ (p.price_ht ?? 0)|money }}</td>
+
+					<td>{{ (p.price_ttc ?? 0)|money }}</td>
+
 					<td>{{ p.unit ?? '-' }}</td>
 
 					<td class="text-end">

@@ -60,5 +60,11 @@
 
 {% block body_javascript %}
 	{{ parent() }}
+
+	<script>
+		window.APP_CURRENCY = {{ currency|json_encode|raw }};
+window.APP_CURRENCY_LABEL = {{ currencyLabel|json_encode|raw }};
+	</script>
+
 	<script src="{{ asset('assets/js/cards.js') }}"></script>
 {% endblock %}
